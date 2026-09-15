@@ -1,0 +1,93 @@
+// Proves AXIS's reactive-state milestone both directions at once (see
+// docs/architecture/reactive-state.md): DOM buttons drive a 3D object's
+// color/scale (page -> scene), and clicking the 3D object updates a DOM
+// counter (scene -> page) - through the exact same shared `state`, not two
+// separate mechanisms bolted together. Run with `axis run examples/configurator.ax`.
+
+state productColor = "#4a90e2"
+state productScale = 1
+state clicks = 0
+
+scene Product {
+    camera { position: (0, 1.5, 4) }
+
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+
+    cube item {
+        color: productColor
+        scale: (productScale, productScale, productScale)
+    }
+
+    on item.click {
+        clicks = clicks + 1
+    }
+
+    on item.hover {
+        item.rotation = (0, 15, 0)
+    }
+
+    on item.unhover {
+        item.rotation = (0, 0, 0)
+    }
+}
+
+page "Configurator" {
+    container layout {
+        direction: "row"
+        gap: 24
+        padding: 32
+        background: "#0b0b12"
+
+        viewport preview {
+            scene: "Product"
+            width: 480
+            height: 400
+            radius: 12
+        }
+
+        container controls {
+            direction: "column"
+            gap: 14
+            width: 260
+
+            heading title { content: "Configure your product" color: white }
+            text clicksLabel { content: "Clicks on the model: " + clicks color: "#9c9cb8" }
+
+            text colorLabel { content: "Color" color: "#9c9cb8" }
+            container swatches {
+                direction: "row"
+                gap: 8
+
+                button pickRed { label: "Red" background: "#e05252" color: white }
+                button pickBlue { label: "Blue" background: "#4a90e2" color: white }
+                button pickGreen { label: "Green" background: "#4caf50" color: white }
+            }
+
+            text sizeLabel { content: "Size: " + productScale color: "#9c9cb8" }
+            container sizeButtons {
+                direction: "row"
+                gap: 8
+
+                button smaller { label: "-" background: "#2a2a3a" color: white }
+                button bigger { label: "+" background: "#2a2a3a" color: white }
+            }
+        }
+    }
+
+    on pickRed.click { productColor = "#e05252" }
+    on pickBlue.click { productColor = "#4a90e2" }
+    on pickGreen.click { productColor = "#4caf50" }
+
+    on smaller.click {
+        if (productScale > 0.4) {
+            productScale = productScale - 0.2
+        }
+    }
+
+    on bigger.click {
+        if (productScale < 2) {
+            productScale = productScale + 0.2
+        }
+    }
+}

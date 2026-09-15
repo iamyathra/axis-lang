@@ -1,0 +1,36 @@
+// A small multi-file AXIS project: this page imports a reusable `Card`
+// component (used twice - each with its own independent "likes" counter)
+// and has its own, separate page-level state/event. Run with:
+//   node bin/axis.js run examples/app/main.ax
+
+import Card from "./components/card.ax"
+
+page "Projects" {
+    state visits = 1
+
+    container page {
+        direction: "column"
+        padding: 48
+        gap: 24
+        background: "#0b0b0f"
+
+        heading pageTitle { content: "Projects" level: 1 color: white }
+
+        Card projectA {
+            title: "AXIS"
+            description: "A language for building the web."
+        }
+
+        Card projectB {
+            title: "Nimbus"
+            description: "Cloud backups without the busywork."
+        }
+
+        button refreshBtn { label: "Simulate visit" color: white background: "#374151" padding: 8 radius: 6 }
+        text visitLabel { content: "Viewed " + visits + " time(s)" color: "#6b7280" size: 12 }
+
+        on refreshBtn.click {
+            visits += 1
+        }
+    }
+}

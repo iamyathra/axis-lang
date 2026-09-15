@@ -1,0 +1,3 @@
+import broken from "./broken-syntax.ax"
+
+page Home { }

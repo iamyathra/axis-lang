@@ -1,0 +1,7 @@
+import shout from "with-extension"
+
+import whisper from "with-extension"
+
+page Home {
+    text label { content: shout("hi") + whisper("bye") }
+}

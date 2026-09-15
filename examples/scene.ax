@@ -1,0 +1,24 @@
+// AXIS files can hold more than one scene. Nothing picks which one plays
+// yet (there's no CLI flag for it) - this is just here to prove parsing
+// multiple scenes actually works.
+scene intro {
+    camera {
+        position: (0, 1, 5)
+    }
+
+    plane ground {
+        position: (0, -1, 0)
+        color: gray
+    }
+}
+
+scene level1 {
+    camera {
+        position: (0, 3, 8)
+    }
+
+    cube box {
+        position: (0, 0, 0)
+        color: green
+    }
+}

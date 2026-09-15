@@ -1,0 +1,152 @@
+// Third-Party Extension Proof: a real application, built strictly after
+// AXIS's "core freeze" checkpoint (see docs/extensions.md and
+// docs/architecture/2026-09-language-platform-audit.md), importing two
+// independently-authored packages it knows nothing about the internals
+// of - axis-tween (generic value interpolation) and axis-inventory (a
+// stack-based item tracker). Neither package required a single change to
+// AXIS's own source (git diff -- src/ is empty across every commit that
+// built them). Run with:
+//   node bin/axis.js run examples/third-party-extension/main.ax
+import createTween from "axis-tween"
+
+import linearEase from "axis-tween"
+
+import quadOutEase from "axis-tween"
+
+import cubicInOutEase from "axis-tween"
+
+import createInventory from "axis-inventory"
+
+page "Third-Party Extension Proof" {
+    state progress = createTween(0, 100, 2, quadOutEase)
+
+    state easingName = "Quad out"
+
+    state inventory = createInventory()
+
+    state log = "Ready."
+
+    container app {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b0f"
+
+        heading title {
+            content: "Progress: " + str(round(progress.value)) + "% (" + easingName + ")"
+            color: white
+        }
+
+        text goldLabel {
+            content: "Gold: " + str(inventory.countOf("gold"))
+            color: "#facc15"
+        }
+
+        text potionLabel {
+            content: "Potions: " + str(inventory.countOf("potion"))
+            color: "#a78bfa"
+        }
+
+        text totalLabel {
+            content: "Total items: " + str(inventory.totalCount())
+            color: "#9ca3af"
+        }
+
+        text status {
+            content: log
+            color: "#9ca3af"
+        }
+
+        container buttons {
+            direction: "row"
+            gap: 12
+
+            button addGold {
+                label: "+5 Gold"
+                color: white
+                background: "#7c5e10"
+                padding: 12
+                radius: 8
+            }
+
+            button spendGold {
+                label: "Spend 5 Gold"
+                color: white
+                background: "#802020"
+                padding: 12
+                radius: 8
+            }
+
+            button addPotion {
+                label: "+1 Potion"
+                color: white
+                background: "#4c1d95"
+                padding: 12
+                radius: 8
+            }
+
+            button restart {
+                label: "Restart progress"
+                color: white
+                background: "#1d4ed8"
+                padding: 12
+                radius: 8
+            }
+
+            button useLinear {
+                label: "Linear easing"
+                color: white
+                background: "#334155"
+                padding: 12
+                radius: 8
+            }
+
+            button useCubic {
+                label: "Cubic easing"
+                color: white
+                background: "#334155"
+                padding: 12
+                radius: 8
+            }
+        }
+    }
+
+    on tick {
+        progress.update(dt)
+    }
+
+    on addGold.click {
+        inventory.addItem("gold", 5)
+        log = "Added 5 gold."
+    }
+
+    on spendGold.click {
+        if (inventory.removeItem("gold", 5)) {
+            log = "Spent 5 gold."
+        } else {
+            log = "Not enough gold to spend."
+        }
+    }
+
+    on addPotion.click {
+        inventory.addItem("potion", 1)
+        log = "Added a potion."
+    }
+
+    on restart.click {
+        progress.reset()
+        log = "Progress restarted."
+    }
+
+    on useLinear.click {
+        progress = createTween(0, 100, 2, linearEase)
+        easingName = "Linear"
+        log = "Switched to linear easing."
+    }
+
+    on useCubic.click {
+        progress = createTween(0, 100, 2, cubicInOutEase)
+        easingName = "Cubic in-out"
+        log = "Switched to cubic in-out easing."
+    }
+}

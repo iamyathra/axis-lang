@@ -1,0 +1,181 @@
+// Task 3 - Interactive Data / Information Experience (benchmarks/task-03-data/requirements.md)
+let planets = [{ name: "Mercury", color: "#8c8c8c", distance: 3, orbitSeconds: 3, fact: "The smallest planet, and the closest to the Sun." }, { name: "Venus", color: "#e0c16c", distance: 4.5, orbitSeconds: 5, fact: "The hottest planet - a runaway greenhouse effect traps the heat in." }, { name: "Earth", color: "#4a90e2", distance: 6, orbitSeconds: 7, fact: "The only known planet with liquid water oceans and life." }, { name: "Mars", color: "#c1440e", distance: 7.5, orbitSeconds: 9, fact: "Home to Olympus Mons, the tallest volcano in the solar system." }]
+
+state selectedPlanet = ""
+
+fn factFor(list, name) {
+    for i in range(0, len(list)) {
+        if (list[i].name == name) {
+            return list[i].fact
+        }
+    }
+    return ""
+}
+
+fn distanceFor(list, name) {
+    for i in range(0, len(list)) {
+        if (list[i].name == name) {
+            return list[i].distance
+        }
+    }
+    return 0
+}
+
+scene Solar {
+    camera {
+        position: (0, 10, 16)
+    }
+
+    ambientLight fill {
+        intensity: 0.4
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.3)
+        intensity: 0.9
+    }
+
+    sphere star {
+        position: (0, 0, 0)
+        scale: (1.4, 1.4, 1.4)
+        color: yellow
+    }
+
+    for i in range(0, len(planets)) {
+        let p = planets[i]
+
+        group ("orbit" + i) {
+            sphere (p.name) {
+                position: (p.distance, 0, 0)
+                scale: (0.5, 0.5, 0.5)
+
+                // Deliberately planets[i], not the `p` declared above -
+                // same reason as the on-handler workaround below: a
+                // reactive property *binding* referencing a loop-body
+                // `let` (rather than the loop's own `i`) hits the same
+                // capture gap, just for a scene's flat stored-bindings
+                // recheck instead of a stored handler body. See
+                // benchmarks/task-03-data/results.md.
+                color: selectedPlanet == planets[i].name ? "#ffffff" : planets[i].color
+            }
+        }
+
+        animate ("orbit" + i) {
+            rotation.y -> 360deg
+            duration: p.orbitSeconds * 1000
+            repeat: infinite
+            easing: linear
+        }
+
+        // Deliberately re-indexes `planets[i]` here instead of reusing the
+        // `p` declared just above: `i` is the for-loop's own iteration
+        // variable, which the interpreter's loop-variable capture correctly
+        // snapshots into a handler body meant to run later (a real click,
+        // long after this loop has finished) - but `p` is an ordinary
+        // `let` derived from it, which that capture does NOT currently
+        // preserve. Referencing `p.name` here compiles cleanly (`axis
+        // check` reports no diagnostics) but throws "undefined variable
+        // 'p'" the moment the handler actually runs - a real, reproduced
+        // AXIS gap; see benchmarks/task-03-data/results.md and
+        // docs/ai/COMMON_MISTAKES.md for the full writeup. `p.name`/
+        // `p.color` used directly in a property *binding* (just above,
+        // and in the sidebar button below) are unaffected - those re-run
+        // the whole loop body fresh on every reactive rebuild, so `let p`
+        // is redeclared correctly each time; only a handler *body* stored
+        // for later dispatch hits this.
+        on (p.name).click {
+            selectedPlanet = planets[i].name
+        }
+    }
+}
+
+page "Solar System" {
+    container layout {
+        direction: "row"
+        gap: 24
+        padding: 32
+        background: "#0b0b12"
+
+        viewport preview {
+            scene: "Solar"
+            width: 500
+            height: 420
+            radius: 12
+        }
+
+        container sidebar {
+            direction: "column"
+            gap: 12
+            width: 280
+
+            heading title {
+                content: "The Solar System"
+                color: white
+            }
+
+            paragraph subtitle {
+                content: "Click a planet, in 3D or in the list, to learn about it."
+                color: "#a3a3c2"
+                size: 14
+            }
+
+            container list {
+                direction: "column"
+                gap: 6
+
+                for i in range(0, len(planets)) {
+                    let p = planets[i]
+
+                    // `p.name` here (a loop-body `let`, not the loop's own
+                    // `i`) is fine, unlike the scene's `color:` binding
+                    // above - a page's reactive `for` fully re-runs this
+                    // whole loop body from source on every state change
+                    // (pageRuntime.js's rebuildReactiveBlock), so `let p`
+                    // is genuinely redeclared fresh each time. Nothing on
+                    // the DOM side depends on the same stored/uncaptured-
+                    // binding path a scene's properties do.
+                    button (p.name + "Btn") {
+                        label: p.name
+                        background: selectedPlanet == p.name ? "#4a90e2" : "#1c1c28"
+                        color: white
+                    }
+
+                    // Same workaround as the scene's on (p.name).click,
+                    // above - re-index the shared array via the captured
+                    // loop variable `i` rather than reusing the `let p`
+                    // alias inside a handler body.
+                    on (p.name + "Btn").click {
+                        selectedPlanet = planets[i].name
+                    }
+                }
+            }
+
+            container detail {
+                direction: "column"
+                gap: 6
+                padding: 16
+                background: "#15151f"
+                radius: 8
+
+                text detailName {
+                    content: selectedPlanet == "" ? "Select a planet" : selectedPlanet
+                    color: white
+                    size: 18
+                    weight: "bold"
+                }
+
+                text detailFact {
+                    content: selectedPlanet == "" ? "No planet selected yet." : factFor(planets, selectedPlanet)
+                    color: "#a3a3c2"
+                    size: 14
+                }
+
+                text detailDistance {
+                    content: selectedPlanet == "" ? "" : "Orbit distance: " + distanceFor(planets, selectedPlanet) + " AU (scene units)"
+                    color: "#6b8fd6"
+                    size: 13
+                }
+            }
+        }
+    }
+}

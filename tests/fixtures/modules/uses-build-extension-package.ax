@@ -1,0 +1,5 @@
+import activate from "with-build-extension"
+
+page Home {
+    fixtureWidget label { content: "hi" }
+}

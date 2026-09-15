@@ -1,0 +1,85 @@
+// A reusable first-person-style camera controller (game-foundation phase,
+// item 7-8 of the post-milestone directive) - the SAME yaw/pitch/
+// spherical-to-Cartesian math docs/language.md's "A first-person camera
+// controller" section already documents as buildable from ordinary AXIS
+// primitives, now packaged so it isn't re-derived (and re-risking the
+// exact sign-error bug that math already caught once - see
+// docs/architecture/2026-09-language-platform-audit.md's game-dev-
+// foundation addendum) every time a scene wants one.
+//
+// Deliberately decoupled into three independent pieces, not one
+// "moveAndLook" call, so this composes for more than a pure FPS:
+//   - look/lookTarget: mouse-look alone - equally useful for a free-look
+//     3D viewer or a third-person camera that only rotates, no WASD.
+//   - move: ground movement relative to facing direction - useful
+//     without look at all (a fixed-camera top-down game still wants
+//     "forward relative to some heading").
+// A scene wires the three together (see examples/fps-controls/main.ax);
+// nothing here assumes it's the only camera behavior a scene has.
+
+export fn makeFpsCamera(config) {
+    let cam = {
+        yaw: get(config, "yaw", 0),
+        pitch: get(config, "pitch", 0),
+        sensitivity: get(config, "sensitivity", 0.2),
+        speed: get(config, "speed", 4),
+        pitchLimit: get(config, "pitchLimit", 89),
+    }
+
+    // Accumulates one mouse-move delta into yaw/pitch, clamped to
+    // +/-pitchLimit so looking straight up/down can't flip the camera
+    // past vertical. `dx`/`dy` are exactly `on mousemove`'s own dx/dy (or
+    // an input package's per-frame mouseDX/mouseDY) - this doesn't care
+    // which, only that they're pixel deltas.
+    //
+    // Sign convention, deliberately spelled out (this exact math caught a
+    // real bug once - a flipped yaw sign turned the camera the wrong way
+    // on a rightward mouse move - see the audit addendum above): a
+    // positive dx (mouse moving right) must INCREASE yaw. Verified by
+    // tests/camera-controller.test.js's semantic-level test, not just
+    // this formula's own internal consistency.
+    cam.look = fn(dx, dy) {
+        self.yaw = self.yaw + dx * self.sensitivity
+        self.pitch = self.pitch - dy * self.sensitivity
+        if (self.pitch > self.pitchLimit) {
+            self.pitch = self.pitchLimit
+        }
+        if (self.pitch < 0 - self.pitchLimit) {
+            self.pitch = 0 - self.pitchLimit
+        }
+    }
+
+    // The point a real `camera.target` should be set to, given the
+    // camera's own current position - ordinary spherical-to-Cartesian
+    // trigonometry, no special camera-aiming primitive needed (a
+    // camera's `.rotation` isn't a meaningful animate/on target - see
+    // docs/language.md's Camera section - `target` is what actually
+    // aims one).
+    cam.lookTarget = fn(position) {
+        let dirX = cos(self.pitch) * sin(self.yaw)
+        let dirY = sin(self.pitch)
+        let dirZ = 0 - cos(self.pitch) * cos(self.yaw)
+        return (position.x + dirX, position.y + dirY, position.z + dirZ)
+    }
+
+    // Ground-plane movement relative to facing direction (yaw only -
+    // pitch affects where the camera looks, not which way walking moves
+    // it, standard first-person convention). forwardInput/strafeInput
+    // are each -1/0/1 (or any signed magnitude) - a caller composes these
+    // from WASD/arrow keys, a gamepad stick, or anything else that
+    // produces two signed numbers; this package has no opinion on where
+    // they come from. Returns the new position; doesn't mutate anything
+    // itself, so a caller can compare against the old position, clamp
+    // it, or discard it entirely.
+    cam.move = fn(position, forwardInput, strafeInput, dt) {
+        let forwardX = sin(self.yaw)
+        let forwardZ = 0 - cos(self.yaw)
+        let rightX = cos(self.yaw)
+        let rightZ = sin(self.yaw)
+        let moveX = (strafeInput * rightX + forwardInput * forwardX) * self.speed * dt
+        let moveZ = (strafeInput * rightZ + forwardInput * forwardZ) * self.speed * dt
+        return (position.x + moveX, position.y, position.z + moveZ)
+    }
+
+    return cam
+}

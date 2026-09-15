@@ -1,0 +1,8 @@
+// Proves package resolution walks upward - there's no axis_modules/ inside
+// nested/ or nested/deep/, only at tests/fixtures/modules/ itself, two
+// levels up from here.
+import greet from "greeter"
+
+page Home {
+    text label { content: greet("Nested") }
+}

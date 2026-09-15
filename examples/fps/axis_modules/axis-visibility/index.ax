@@ -1,0 +1,15 @@
+// See axis-wireframe/index.ax (examples/runtime-extension-demo/) for why
+// this export exists at all even though the real capability lives
+// entirely in extension.js - a package only activates once some `.ax`
+// source actually imports it.
+export fn hideAll(objects) {
+    for obj in objects {
+        obj.visible = false
+    }
+}
+
+export fn showAll(objects) {
+    for obj in objects {
+        obj.visible = true
+    }
+}

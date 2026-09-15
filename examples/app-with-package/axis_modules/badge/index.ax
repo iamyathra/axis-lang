@@ -1,0 +1,26 @@
+// A tiny local "package" (Phase F of the general-purpose-language pivot -
+// see docs/architecture/2026-09-language-platform-audit.md): nothing marks
+// this directory as special to AXIS beyond its location - it's just an
+// ordinary multi-file AXIS project, importable by a bare name ("badge",
+// not "./badge.ax") because it sits at axis_modules/badge/index.ax
+// relative to some ancestor of whatever imports it. Its own internal
+// import (below) works exactly the way examples/app/'s card.ax importing
+// from utils.ax already does - a package's own `import` needs to reach
+// what it uses itself; a consumer importing just `Badge` doesn't also
+// need to know `toneColor` exists. See docs/language.md's Modules section.
+import toneColor from "./colors.ax"
+
+export component Badge(label, tone) {
+    container pill {
+        direction: "row"
+        padding: 8
+        radius: 999
+        background: toneColor(tone)
+
+        text pillLabel {
+            content: label
+            color: white
+            size: 13
+        }
+    }
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C - host drives AXIS inputs</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f8; color: #111; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; }
+  input[type="range"] { width: 100%; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Host JS drives AXIS's own reactive bindings</h1>
+  <label>Title: <input id="title-input" value="Live-updated title"></label>
+  <label>Intensity: <input id="intensity-input" type="range" min="0" max="1" step="0.05" value="0.5"></label>
+  <div id="hero"></div>
+</main>
+
+<script type="module">
+  import { mount } from "/src/mount.js";
+
+  const source = await (await fetch("./hero.ax")).text();
+  const instance = await mount(document.getElementById("hero"), source, {
+    inputs: { title: "Live-updated title", intensity: 0.5 },
+  });
+
+  const titleInput = document.getElementById("title-input");
+  const intensityInput = document.getElementById("intensity-input");
+  titleInput.addEventListener("input", () => instance.update({ title: titleInput.value }));
+  intensityInput.addEventListener("input", () => instance.update({ intensity: Number(intensityInput.value) }));
+
+  window.__axisInstance = instance;
+</script>
+</body>
+</html>

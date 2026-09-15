@@ -1,0 +1,32 @@
+{
+  "name": "axis-lang-vscode",
+  "displayName": "AXIS",
+  "description": "Syntax highlighting and language server support (diagnostics, formatting, hover, go-to-definition, document symbols) for .ax (AXIS) files.",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "axis-lang",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:axis"],
+  "main": "./src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "axis",
+        "aliases": ["AXIS", "axis"],
+        "extensions": [".ax"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "axis",
+        "scopeName": "source.axis",
+        "path": "./syntaxes/axis.tmLanguage.json"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

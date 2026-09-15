@@ -1,0 +1,75 @@
+// this is the one to run if you only try one example.
+// a ring of cubes, built with a loop and a real function (not typed out by
+// hand), each spinning at its own speed, lit by a couple of real lights,
+// with a sphere in the middle you can click to change the whole ring's color.
+
+fn ringPosition(i, count, radius) {
+    let angle = (i / count) * 360
+    return (radius * cos(angle), 0, radius * sin(angle))
+}
+
+scene main {
+    camera {
+        position: (0, 6, 12)
+    }
+
+    ambientLight fill {
+        intensity: 0.35
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.3)
+        intensity: 0.9
+    }
+
+    let count = 8
+    let colors = [red, orange, yellow, green, blue, purple, pink, cyan]
+
+    group ring {
+        for i in range(0, count) {
+            cube ("cube" + i) {
+                position: ringPosition(i, count, 4)
+                color: colors[i]
+            }
+        }
+    }
+
+    // animate/on targets have to be a plain name for now (not a computed
+    // one like the cubes above got), so instead of spinning each cube on
+    // its own, we spin the whole ring as one group
+    animate ring {
+        rotation.y -> 360deg
+        duration: 8s
+        repeat: infinite
+        easing: linear
+    }
+
+    sphere core {
+        position: (0, 0, 0)
+        color: white
+    }
+
+    let clicks = 0
+    let coreColors = [white, red, orange, yellow, green, blue, purple]
+
+    on core.click {
+        clicks = clicks + 1
+        core.color = coreColors[clicks % len(coreColors)]
+        print("core clicked", clicks, "times")
+    }
+
+    on core.hover {
+        core.scale = (1.2, 1.2, 1.2)
+    }
+
+    on core.unhover {
+        core.scale = (1, 1, 1)
+    }
+
+    animate core {
+        rotation.y -> 360deg
+        duration: 6s
+        repeat: infinite
+        easing: linear
+    }
+}

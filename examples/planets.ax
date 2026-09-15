@@ -1,0 +1,56 @@
+// A data-driven scene: the planets themselves are just data (a record per
+// planet, held in an array) - the loop that turns that data into actual
+// spheres and orbit animations is the only place "planet" exists as code.
+// Add a planet to the array (or change one's color/size/speed) and it just
+// shows up correctly, with no other line of this file touched - see
+// docs/language.md's Records section.
+
+scene main {
+    camera { position: (0, 11, 18) }
+
+    ambientLight fill { intensity: 0.35 }
+    directionalLight sun { direction: (-1, -1, -0.3) intensity: 0.9 }
+
+    let planets = [
+        { name: "Mercury", color: "#8c8c8c", radius: 0.3,  distance: 3,   orbitSeconds: 3 },
+        { name: "Venus",   color: "#e0c16c", radius: 0.5,  distance: 4.5, orbitSeconds: 5 },
+        { name: "Earth",   color: "#4a90e2", radius: 0.55, distance: 6,   orbitSeconds: 7 },
+        { name: "Mars",    color: "#c1440e", radius: 0.4,  distance: 7.5, orbitSeconds: 9 }
+    ]
+
+    sphere star {
+        position: (0, 0, 0)
+        scale: (1.4, 1.4, 1.4)
+        color: yellow
+    }
+
+    for i in range(0, len(planets)) {
+        let p = planets[i]
+
+        // a group holds the planet at its orbit distance and is what
+        // actually spins - rotating the sphere itself would just spin it
+        // in place, not carry it around the star
+        group ("orbit" + i) {
+            sphere (p.name) {
+                position: (p.distance, 0, 0)
+                scale: (p.radius, p.radius, p.radius)
+                color: p.color
+            }
+        }
+
+        animate ("orbit" + i) {
+            rotation.y -> 360deg
+            duration: p.orbitSeconds * 1000
+            repeat: infinite
+            easing: linear
+        }
+    }
+
+    let starColors = [yellow, white, orange]
+    let clicks = 0
+
+    on star.click {
+        clicks = clicks + 1
+        star.color = starColors[clicks % len(starColors)]
+    }
+}

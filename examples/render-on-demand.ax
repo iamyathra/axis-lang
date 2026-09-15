@@ -1,0 +1,82 @@
+// AXIS's render-on-demand showcase: three mounted 3D scenes side by side -
+// one that never changes, one that plays a short animation once and then
+// settles, and one driven by scroll - proving an idle scene stops costing
+// anything once nothing's left to show, without breaking any of the other
+// two, or the DOM content around them.
+
+scene idleScene {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4a90e2" }
+}
+
+scene finiteScene {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#e0a03c" }
+
+    animate box {
+        rotation.y -> 360deg
+        duration: 800ms
+        easing: easeOut
+    }
+}
+
+scene scrollyScene {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4caf50" scale: (0.2, 0.2, 0.2) }
+
+    timeline grow {
+        animate box { scale.x -> 1 scale.y -> 1 scale.z -> 1 duration: 1000 }
+    }
+}
+
+page "AXIS - Render on Demand" {
+    container hero {
+        direction: "column"
+        gap: 8
+        padding: 24
+        background: "#0b0b12"
+
+        heading title { content: "Render on demand" color: white size: 30 }
+        text subtitle { content: "Idle, finite, and scroll-driven scenes side by side." color: "#9c9cb8" }
+
+        container row {
+            direction: "row"
+            gap: 16
+
+            viewport idle { scene: "idleScene" width: 360 height: 260 radius: 12 }
+            viewport finite { scene: "finiteScene" width: 360 height: 260 radius: 12 }
+        }
+    }
+
+    container spacer {
+        direction: "column"
+        padding: 64
+        background: "#101018"
+
+        paragraph mid { content: "Scroll further to reach the scroll-driven scene below." color: "#9c9cb8" }
+    }
+
+    container scrollySection {
+        direction: "column"
+        padding: 24
+        background: "#0b0b12"
+        scrollTimeline: "grow"
+        height: 1400
+
+        viewport stage { scene: "scrollyScene" width: 360 height: 260 radius: 12 }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 64
+        background: "#0b0b12"
+
+        text end { content: "End." color: "#9c9cb8" }
+    }
+}

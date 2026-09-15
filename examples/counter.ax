@@ -1,0 +1,50 @@
+// A minimal demo of AXIS v2's reactive `state` and page `animate`: the
+// heading's content is bound to `count` and updates itself whenever a
+// button handler changes it - no manual `.content = ...` anywhere - and
+// the badge fades in once when the page loads.
+
+page "Counter" {
+  state count = 0
+
+  container app {
+    direction: "column"
+    align: "center"
+    gap: 16
+    padding: 48
+    background: "#0b0b0f"
+
+    text badge {
+      content: "Live demo"
+      color: "#7dd3fc"
+      size: 14
+      opacity: 0
+    }
+
+    heading title {
+      content: "Count: " + count
+      level: 1
+      color: white
+    }
+
+    container buttons {
+      direction: "row"
+      gap: 12
+
+      button dec { label: "-1" color: white background: "#4f46e5" padding: 12 radius: 8 }
+      button inc { label: "+1" color: white background: "#4f46e5" padding: 12 radius: 8 }
+    }
+  }
+
+  animate badge {
+    opacity -> 1
+    duration: 0.8s
+  }
+
+  on inc.click {
+    count += 1
+  }
+
+  on dec.click {
+    count -= 1
+  }
+}

@@ -1,0 +1,57 @@
+// 'on mousemove'/'on mousedown'/'on mouseup' (the second half of Phase H's
+// input work, alongside on keydown/on keyup - see
+// docs/architecture/2026-09-language-platform-audit.md). 'dx'/'dy' are
+// movement deltas since the last event, not an absolute cursor position -
+// AXIS has no "where is the mouse" primitive, deliberately (see
+// docs/language.md's Keyboard input section for the same "raw primitive,
+// no built-in convenience" philosophy) - so this reticle tracks its own
+// position by accumulating dx/dy itself, exactly the way a mouse-look
+// camera controller would accumulate yaw/pitch.
+page "Mouse Input" {
+    state x = 200
+
+    state y = 150
+
+    state isPressed = false
+
+    state reticleColor = "#f97316"
+
+    container stage {
+        position: "relative"
+        width: 400
+        height: 300
+        background: "#0b0b0f"
+        radius: 12
+        cursor: "none"
+
+        container reticle {
+            position: "absolute"
+            left: x
+            top: y
+            width: 16
+            height: 16
+            radius: 999
+            background: reticleColor
+        }
+    }
+
+    text status {
+        content: str(isPressed)
+        color: "#9ca3af"
+    }
+
+    on mousemove {
+        x = x + dx
+        y = y + dy
+    }
+
+    on mousedown {
+        isPressed = true
+        reticleColor = "#22c55e"
+    }
+
+    on mouseup {
+        isPressed = false
+        reticleColor = "#f97316"
+    }
+}

@@ -1,0 +1,37 @@
+// a scene with real lighting - three shapes catching light from different
+// angles instead of the flat unlit colors earlier examples used.
+scene main {
+    camera {
+        position: (3, 3, 8)
+    }
+
+    ambientLight fill {
+        intensity: 0.3
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.5)
+        intensity: 1
+    }
+
+    pointLight bulb {
+        position: (-3, 2, 2)
+        color: orange
+        intensity: 1.5
+    }
+
+    sphere ball {
+        position: (0, 0, 0)
+        color: white
+    }
+
+    cube box {
+        position: (2, 0, 0)
+        color: white
+    }
+
+    cylinder post {
+        position: (-2, 0, 0)
+        color: white
+    }
+}

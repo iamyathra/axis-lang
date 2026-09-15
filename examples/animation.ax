@@ -1,0 +1,17 @@
+// spinning cube, forever.
+scene main {
+    camera {
+        position: (0, 2, 6)
+    }
+
+    cube box {
+        position: (0, 0, 0)
+        color: orange
+    }
+
+    animate box {
+        rotation.y -> 360deg
+        duration: 2s
+        repeat: infinite
+    }
+}

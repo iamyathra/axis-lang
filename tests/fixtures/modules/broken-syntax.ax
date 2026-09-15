@@ -1,0 +1,3 @@
+fn broken() {
+    return 1 +
+}

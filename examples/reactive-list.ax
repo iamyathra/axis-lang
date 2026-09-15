@@ -1,0 +1,86 @@
+// Reactive structure: a `for`/`if` directly inside a page body now stays
+// live after the page loads, not just the property *values* inside it -
+// see docs/architecture/reactive-structure.md. No new syntax: the exact
+// same `for`/`if` grammar every other example already uses.
+
+state nextId = 3
+state todos = [
+    { id: 1, label: "Write the audit", done: true },
+    { id: 2, label: "Ship reactive lists", done: false }
+]
+state showDone = false
+
+fn visibleTodos(all, showDone) {
+    if (showDone) {
+        return all
+    }
+    let out = []
+    for t in all {
+        if (!t.done) {
+            out = out + [t]
+        }
+    }
+    return out
+}
+
+page "Todos" {
+    container app {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b12"
+
+        heading title { content: "Todos" color: white size: 28 }
+
+        container toolbar {
+            direction: "row"
+            gap: 8
+
+            button addBtn { label: "Add a todo" background: "#4a90e2" color: white padding: 10 radius: 6 }
+            button toggleBtn { label: "Toggle done" background: "#2a2a3a" color: white padding: 10 radius: 6 }
+        }
+
+        text count { content: len(todos) + " todo(s), " + len(visibleTodos(todos, showDone)) + " shown" color: "#9c9cb8" }
+
+        container list {
+            direction: "column"
+            gap: 8
+
+            for t in visibleTodos(todos, showDone) {
+                container ("row" + t.id) {
+                    direction: "row"
+                    gap: 8
+                    padding: 8
+                    background: "#16161f"
+                    radius: 6
+
+                    text ("label" + t.id) { content: t.label color: white }
+                    button ("remove" + t.id) { label: "Remove" background: "#802020" color: white padding: 6 radius: 4 }
+                }
+
+                on ("remove" + t.id).click {
+                    let out = []
+                    for x in todos {
+                        if (x.id != t.id) {
+                            out = out + [x]
+                        }
+                    }
+                    todos = out
+                }
+            }
+        }
+
+        if (len(todos) == 0) {
+            text empty { content: "Nothing left - add one above." color: "#666677" }
+        }
+    }
+
+    on addBtn.click {
+        todos = todos + [{ id: nextId, label: "New todo " + nextId, done: false }]
+        nextId = nextId + 1
+    }
+
+    on toggleBtn.click {
+        showDone = !showDone
+    }
+}

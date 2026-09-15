@@ -1,0 +1,5 @@
+import helper from "./shared.ax"
+
+export fn useRight(x) {
+    return helper(x) + "-right"
+}

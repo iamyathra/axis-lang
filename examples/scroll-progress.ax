@@ -1,0 +1,58 @@
+// AXIS's scroll-progress showcase: scroll as DATA, not just an animation
+// trigger. `scrollProgress: "progress"` (on `hero`, below) writes this
+// container's own scroll progress (0-1) into the shared top-level `progress`
+// - through the exact same reactive-state machinery an `on` handler's
+// assignment already uses (see docs/architecture/reactive-state.md), not a
+// bespoke scroll-to-value pipeline. Both a page text binding *and* a
+// shape's own rotation/scale inside the embedded scene read that same
+// `progress` - one scroll position, one number, driving DOM and 3D at once,
+// with zero extra plumbing beyond what reactive `state` already does.
+//
+// See `examples/unified-story.ax` for scroll driving a `timeline`
+// (animation); this is scroll driving a plain reactive value (data) - the
+// two compose, but neither depends on the other.
+
+state progress = 0
+
+scene reveal {
+    camera { position: (0, 2, 8) }
+    ambientLight fill { intensity: 0.4 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+
+    cube box {
+        color: "#4a90e2"
+        rotation: (0, progress * 360, 0)
+        scale: (0.5 + progress * 0.8, 0.5 + progress * 0.8, 0.5 + progress * 0.8)
+        material.metalness: 0.2 + progress * 0.7
+        material.roughness: 0.9 - progress * 0.7
+    }
+}
+
+page "AXIS - Scroll Progress" {
+    container hero {
+        direction: "column"
+        gap: 8
+        padding: 32
+        background: "#0b0b12"
+        scrollProgress: "progress"
+        height: 2400
+
+        heading title { content: "Scroll is data" color: white size: 36 }
+        text readout { content: "progress: " + round(progress * 100) + "%" color: "#8fd3ff" size: 20 }
+
+        viewport stage {
+            scene: "reveal"
+            width: "100%"
+            height: 480
+            radius: 16
+        }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 64
+        background: "#0b0b12"
+
+        text end { content: "End." color: "#9c9cb8" }
+    }
+}

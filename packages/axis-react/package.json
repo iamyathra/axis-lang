@@ -1,0 +1,28 @@
+{
+  "name": "axis-react",
+  "version": "0.1.0",
+  "description": "React adapter for AXIS - embeds an AXIS page component into a React tree via a thin lifecycle wrapper around axis-lang's own mount()/update()/destroy() API. AXIS core never imports React; this is the only place that does.",
+  "type": "module",
+  "main": "./src/Axis.js",
+  "exports": {
+    ".": "./src/Axis.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamyathra/axis-lang.git",
+    "directory": "packages/axis-react"
+  },
+  "homepage": "https://github.com/iamyathra/axis-lang/tree/main/packages/axis-react#readme",
+  "peerDependencies": {
+    "react": ">=18",
+    "axis-lang": "*"
+  },
+  "devDependencies": {
+    "axis-lang": "file:../../"
+  },
+  "license": "MIT"
+}

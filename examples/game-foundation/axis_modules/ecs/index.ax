@@ -1,0 +1,103 @@
+// Generic entity/component/system primitives - the game-development
+// foundation phase of the general-purpose-language pivot (see
+// docs/architecture/2026-09-language-platform-audit.md's game-foundation
+// addendum). Built entirely from primitives that already existed before
+// this package: records, self-bound methods (examples/entities.ax's
+// "data with behavior" pattern), arrays/stdlib (push/filter/find), and
+// plain functions. Zero changes to src/ were needed for any of this - the
+// same proof Phase G already made for physics2d, applied to the
+// entity/component/system shape specifically.
+//
+// AXIS deliberately has no `entity`/`component`/`system` keyword (see
+// docs/language.md's "Entities, components, systems" section for why) -
+// this package's exports are exactly as "special" as any other record and
+// function a developer could have written themselves; nothing here is
+// privileged by the runtime.
+//
+// A real, honest limitation, not papered over: AXIS's `==`/`!=` on
+// records is structural (deepEqual), not reference identity (see
+// evaluator.js's `deepEqual`) - two entities with identical component data
+// would compare equal even though they're conceptually different things.
+// That's why `spawn` mints an explicit numeric `id` and `destroy` takes an
+// id, not an entity reference - identity has to be a real field here,
+// there's no free reference-equality to lean on.
+
+export fn makeEntity(name) {
+    let e = { name: name, id: 0, components: [] }
+
+    // Returns `self` so a spawn site can chain `.add(...).add(...)`.
+    e.add = fn(component) {
+        push(self.components, component)
+        return self
+    }
+
+    e.get = fn(type) {
+        return find(self.components, fn(c) { return c.type == type })
+    }
+
+    e.has = fn(type) {
+        return self.get(type) != null
+    }
+
+    // Calls a removed component's own `dispose()` first, if it has one -
+    // the hook a component uses to release anything it holds (a timer, a
+    // subscription, ...) so removing it doesn't leak. See makeWorld's
+    // `destroy`, which relies on this same convention for a whole entity.
+    e.remove = fn(type) {
+        let existing = self.get(type)
+        if (existing != null && has(existing, "dispose")) {
+            existing.dispose()
+        }
+        self.components = filter(self.components, fn(c) { return c.type != type })
+    }
+
+    return e
+}
+
+export fn makeWorld() {
+    let w = { entities: [], nextId: 1 }
+
+    // Assigns the entity's identity here, at spawn time - not left to the
+    // caller - so two entities can never accidentally collide on id, and
+    // `destroy` always has something real to match against.
+    w.spawn = fn(entity) {
+        entity.id = self.nextId
+        self.nextId = self.nextId + 1
+        push(self.entities, entity)
+        return entity
+    }
+
+    // Disposes every component first (see Entity.remove's own note), then
+    // drops the entity itself - this is the entity-level cleanup hook the
+    // game-foundation audit asked for: a developer can rely on `destroy`
+    // to leave nothing dangling, not just remove the entity from the list.
+    w.destroy = fn(id) {
+        let target = find(self.entities, fn(e) { return e.id == id })
+        if (target != null) {
+            for c in target.components {
+                if (has(c, "dispose")) {
+                    c.dispose()
+                }
+            }
+        }
+        self.entities = filter(self.entities, fn(e) { return e.id != id })
+    }
+
+    w.withComponent = fn(type) {
+        return filter(self.entities, fn(e) { return e.has(type) })
+    }
+
+    return w
+}
+
+// A "system" is nothing but a plain function `fn(world, dt) { ... }` - no
+// registration object, no base class. `runSystems` exists only to fix
+// *ordering* in one obvious place (array order, top to bottom) rather than
+// leaving every caller to hand-roll the same loop - see docs/language.md
+// for why that ordering is deliberately this simple and not a priority
+// queue or a dependency graph.
+export fn runSystems(systems, world, dt) {
+    for system in systems {
+        system(world, dt)
+    }
+}

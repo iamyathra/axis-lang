@@ -1,0 +1,5 @@
+import activate from "broken-build-extension"
+
+page Home {
+    text label { content: "hi" }
+}

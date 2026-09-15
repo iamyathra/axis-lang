@@ -1,0 +1,5 @@
+import farewell from "custom-main"
+
+page Home {
+    text label { content: farewell("AXIS") }
+}

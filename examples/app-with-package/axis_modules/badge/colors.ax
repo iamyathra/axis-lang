@@ -1,0 +1,9 @@
+export fn toneColor(tone) {
+    if (tone == "success") {
+        return "#22c55e"
+    }
+    if (tone == "danger") {
+        return "#ef4444"
+    }
+    return "#9ca3af"
+}

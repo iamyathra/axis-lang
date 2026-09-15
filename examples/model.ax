@@ -1,0 +1,48 @@
+// AXIS's asset-loading example: `model` loads geometry and materials from
+// an external .glb file instead of one of the built-in primitive shapes -
+// the color, the material, the whole mesh comes from the file itself.
+// examples/assets/pyramid.glb is a small, hand-built (but genuinely
+// spec-compliant) glTF fixture - swap it for anything exported out of
+// Blender ("File > Export > glTF 2.0 (.glb)") and it should just work the
+// same way, no AXIS code changes needed.
+//
+// Also proves the things that used to be missing for a model to feel like a
+// genuinely first-class scene object, not a second-class imported asset:
+// `camera { controls: "orbit" }` (drag to look around, scroll to zoom),
+// clicking the model itself firing `on pyramid.click` (raycasting reaches
+// every mesh inside the loaded file, not just AXIS's own built-in shapes),
+// the model's own `scale` being a real `state`-bound, reactive property
+// (see docs/architecture/reactive-state.md) exactly like a shape's is, and
+// - since a `model` can now be nested inside a `group` and that group's own
+// transform is just as live - an `on`-handler directly mutating a `group`
+// that holds the model. See docs/language.md's Models section for exactly
+// what's (and isn't) supported.
+
+scene main {
+    camera { position: (0, 2, 5) controls: "orbit" }
+
+    ambientLight fill { intensity: 0.5 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+
+    state clicks = 0
+
+    group rig {
+        position: (0, clicks * 0.15, 0)
+
+        model pyramid {
+            src: "./assets/pyramid.glb"
+            scale: (1 + clicks * 0.1, 1 + clicks * 0.1, 1 + clicks * 0.1)
+        }
+    }
+
+    animate pyramid {
+        rotation.y -> 360deg
+        duration: 6s
+        repeat: infinite
+        easing: linear
+    }
+
+    on pyramid.click {
+        clicks = clicks + 1
+    }
+}

@@ -1,0 +1,7 @@
+export fn shout(text) {
+    return text + "!"
+}
+
+export fn whisper(text) {
+    return text + "..."
+}

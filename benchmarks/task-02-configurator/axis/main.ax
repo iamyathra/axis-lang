@@ -1,0 +1,198 @@
+// Task 2 - 3D Product Configurator (benchmarks/task-02-configurator/requirements.md)
+state productColor = "#4a90e2"
+
+state productScale = 1
+
+state accessoryOn = false
+
+state clicks = 0
+
+scene Product {
+    camera {
+        position: (0, 1.5, 5)
+        controls: "orbit"
+    }
+
+    ambientLight fill {
+        intensity: 0.6
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.4)
+        intensity: 1
+    }
+
+    cube product {
+        color: productColor
+        scale: (productScale, productScale, productScale)
+    }
+
+    cube accessory {
+        position: (0, 0.9, 0)
+        color: "#e5e5f5"
+        scale: (0.001, 0.001, 0.001)
+    }
+
+    // The page's own handler can only mutate the shared top-level
+    // `accessoryOn` - it can't target `accessory` directly (a scene's own
+    // objects aren't visible in a page handler's namespace, and vice
+    // versa; only state/let crosses the boundary). So the scene watches
+    // that shared value itself and drives its own triggered `animate` -
+    // edge-detected against a scene-local `let` so it plays once per
+    // actual change, not every tick.
+    let accessoryVisible = false
+
+    on tick {
+        if (accessoryOn != accessoryVisible) {
+            accessoryVisible = accessoryOn
+            if (accessoryVisible) {
+                animate accessory {
+                    scale.x -> 0.4
+                    scale.y -> 0.4
+                    scale.z -> 0.4
+                    duration: 300ms
+                }
+            } else {
+                animate accessory {
+                    scale.x -> 0.001
+                    scale.y -> 0.001
+                    scale.z -> 0.001
+                    duration: 300ms
+                }
+            }
+        }
+    }
+
+    on product.click {
+        clicks = clicks + 1
+    }
+}
+
+page "Configurator" {
+    container layout {
+        direction: "row"
+        gap: 24
+        padding: 32
+        background: "#0b0b12"
+
+        viewport preview {
+            scene: "Product"
+            width: 480
+            height: 400
+            radius: 12
+        }
+
+        container controls {
+            direction: "column"
+            gap: 14
+            width: 260
+
+            heading title {
+                content: "Configure your product"
+                color: white
+            }
+
+            paragraph subtitle {
+                content: "Drag the preview to orbit. Click the product to interact with it."
+                color: "#a3a3c2"
+                size: 14
+            }
+
+            text clicksLabel {
+                content: "Interactions: " + clicks
+                color: "#9c9cb8"
+            }
+
+            text colorLabel {
+                content: "Color"
+                color: "#9c9cb8"
+            }
+
+            container swatches {
+                direction: "row"
+                gap: 8
+
+                button pickRed {
+                    label: "Red"
+                    background: "#e05252"
+                    color: white
+                }
+
+                button pickBlue {
+                    label: "Blue"
+                    background: "#4a90e2"
+                    color: white
+                }
+
+                button pickGreen {
+                    label: "Green"
+                    background: "#4caf50"
+                    color: white
+                }
+            }
+
+            text sizeLabel {
+                content: "Size: " + productScale
+                color: "#9c9cb8"
+            }
+
+            container sizeButtons {
+                direction: "row"
+                gap: 8
+
+                button smaller {
+                    label: "-"
+                    background: "#2a2a3a"
+                    color: white
+                }
+
+                button bigger {
+                    label: "+"
+                    background: "#2a2a3a"
+                    color: white
+                }
+            }
+
+            button toggleAccessory {
+                label: accessoryOn ? "Remove accessory" : "Add accessory (+$10)"
+                background: "#2a2a3a"
+                color: white
+            }
+
+            text priceLabel {
+                content: "Price: $" + str(round(49 * productScale + (accessoryOn ? 10 : 0)))
+                color: white
+                size: 18
+                weight: "bold"
+            }
+        }
+    }
+
+    on pickRed.click {
+        productColor = "#e05252"
+    }
+
+    on pickBlue.click {
+        productColor = "#4a90e2"
+    }
+
+    on pickGreen.click {
+        productColor = "#4caf50"
+    }
+
+    on smaller.click {
+        if (productScale > 0.4) {
+            productScale = productScale - 0.2
+        }
+    }
+
+    on bigger.click {
+        if (productScale < 2) {
+            productScale = productScale + 0.2
+        }
+    }
+
+    on toggleAccessory.click {
+        accessoryOn = !accessoryOn
+    }
+}

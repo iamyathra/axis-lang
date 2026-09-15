@@ -1,0 +1,54 @@
+{
+  "name": "axis-lang",
+  "version": "1.0.0",
+  "description": "AXIS - a small language for building interactive web pages and 3D scenes",
+  "type": "module",
+  "bin": {
+    "axis": "bin/axis.js"
+  },
+  "main": "./src/mount.js",
+  "exports": {
+    ".": "./src/mount.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "docs",
+    "examples",
+    "README.md",
+    "LICENSE",
+    "!examples/**/node_modules",
+    "!examples/**/dist"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:browser": "node --test tests/browser/*.test.js",
+    "test:packaging": "node --test tests/packaging/*.test.js",
+    "gen:ai-docs": "node scripts/gen-error-codes-doc.mjs && node scripts/gen-language-schema.mjs"
+  },
+  "keywords": [
+    "language",
+    "dsl",
+    "3d",
+    "three.js",
+    "animation",
+    "interpreter",
+    "declarative"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamyathra/axis-lang.git"
+  },
+  "homepage": "https://github.com/iamyathra/axis-lang#readme",
+  "bugs": {
+    "url": "https://github.com/iamyathra/axis-lang/issues"
+  },
+  "license": "MIT",
+  "author": "thelinnx",
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

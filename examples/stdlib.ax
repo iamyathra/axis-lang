@@ -1,0 +1,92 @@
+// A task list demonstrating the array/string/record standard library
+// (map/filter/sortBy/push/... on arrays, split/upper/lower/includes on
+// strings) plus first-class functions - a plain top-level `fn` passed by
+// reference (sortRank/rowBackground), an inline `fn(...) { ... }` closure
+// (matchesQuery adapted to filter's one-argument callback shape), and the
+// ternary/conditional expression (`a ? b : c`) - see docs/language.md's
+// Standard library, Functions, and Control flow sections.
+//
+// Top-level `fn`s can't be declared inside a page/scene/component body (a
+// real, current AXIS limitation - see docs/language.md's Known
+// limitations), so they live here, above the page, and take whatever
+// page-local `state` they need as an explicit parameter rather than
+// closing over it.
+fn matchesQuery(task, query) {
+    return query == "" ? true : includes(lower(task.name), lower(query))
+}
+
+// Unfinished tasks sort before finished ones, ties broken by priority.
+fn sortRank(task) {
+    return task.done ? 100 + task.priority : task.priority
+}
+
+fn rowBackground(task) {
+    return task.done ? "#14532d" : "#1e293b"
+}
+
+page "Tasks" {
+    state tasks = [{ name: "Write the report", done: false, priority: 2 }, { name: "Review pull requests", done: true, priority: 1 }, { name: "Plan next sprint", done: false, priority: 1 }]
+
+    state query = ""
+
+    state nextPriority = 3
+
+    container app {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b0f"
+
+        heading title {
+            content: "Tasks (" + str(len(tasks)) + ")"
+            level: 1
+            color: white
+        }
+
+        input search {
+            placeholder: "Search tasks..."
+            value: query
+        }
+
+        list visible {
+            direction: "column"
+            gap: 8
+
+            // Compose the stdlib instead of a bespoke query mechanism: filter by
+            // the search box (an inline closure, since 'query' is page-local
+            // state matchesQuery itself doesn't close over), then sort the
+            // remaining tasks so unfinished, higher-priority work sorts first.
+
+            for task in sortBy(filter(tasks, fn(t) { return matchesQuery(t, query) }), sortRank) {
+                item ("row" + task.name) {
+                    direction: "row"
+                    gap: 8
+                    padding: 8
+                    background: rowBackground(task)
+
+                    text ("label" + task.name) {
+                        content: upper(task.name)
+                        color: white
+                    }
+                }
+            }
+        }
+
+        button addTask {
+            label: "Add a low-priority task"
+            color: white
+            background: "#4f46e5"
+            padding: 12
+            radius: 8
+        }
+    }
+
+    on search.change {
+        query = search.value
+    }
+
+    on addTask.click {
+        push(tasks, { name: "New task " + str(nextPriority), done: false, priority: nextPriority })
+        nextPriority += 1
+    }
+}

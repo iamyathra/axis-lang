@@ -1,0 +1,181 @@
+// AXIS's scroll-driven timeline showcase - ordinary page scroll turned into
+// a deterministic 3D choreography. `viewport { scrollTimeline: "arc" }`
+// (below) is the whole API: the `journey` scene's `arc` timeline stops
+// auto-playing on load and instead tracks this viewport's own scroll
+// position - scroll down, the timeline advances; scroll back up, it
+// reverses; jump with the scrollbar, it jumps to exactly that point. The
+// timeline itself doesn't know or care that scroll (rather than normal
+// playback) is driving it - see docs/language.md's Timelines section.
+//
+// Also proves multiple independent scroll-linked timelines can coexist on
+// one page: the second, smaller `reveal` viewport further down tracks its
+// own scroll position completely independently of the hero above it.
+
+scene journey {
+    camera { position: (0, 2, 14) }
+
+    ambientLight fill { intensity: 0.3 }
+    directionalLight sun { direction: (-1, -1.2, -0.6) intensity: 1.5 shadows: true }
+    spotLight glow { position: (0, 5, 3) target: (0, 0, 0) color: "#8fd3ff" intensity: 0 angle: 32 penumbra: 0.5 }
+
+    plane ground {
+        position: (0, -1.4, 0)
+        rotation: (-90, 0, 0)
+        scale: (24, 24, 1)
+        color: "#1c1c26"
+        material.roughness: 0.95
+        receiveShadow: true
+        castShadow: false
+    }
+
+    model centerpiece {
+        src: "./assets/pyramid.glb"
+        position: (0, 0, 0)
+        scale: (0.01, 0.01, 0.01)
+        material.metalness: 0.1
+        material.roughness: 0.8
+    }
+
+    // The whole scroll-through, act by act. `at` positions every step
+    // relative to a label or to `previous` - none of this is scroll pixels
+    // or wall-clock ms, it's all just this timeline's own 0..duration
+    // range, which `scrollTimeline` (see the page below) maps linearly onto
+    // however much of the page this viewport's `height` actually spans.
+    timeline arc {
+        label enter
+
+        animate centerpiece {
+            scale.x -> 1.1
+            scale.y -> 1.1
+            scale.z -> 1.1
+            duration: 1000
+            easing: easeOut
+        }
+
+        animate camera {
+            position.z -> 8
+            duration: 1000
+            at: enter
+        }
+
+        label settled
+
+        animate glow {
+            intensity -> 25
+            duration: 600
+            at: settled + 200
+        }
+
+        animate centerpiece {
+            rotation.y -> 180deg
+            duration: 1400
+            easing: easeInOut
+            at: settled + 400
+        }
+
+        label reveal
+
+        animate centerpiece {
+            material.metalness -> 0.95
+            material.roughness -> 0.1
+            duration: 900
+            at: reveal
+        }
+
+        animate camera {
+            position.x -> 4
+            position.z -> 5
+            duration: 1200
+            easing: easeInOut
+            at: reveal + 300
+        }
+
+        label finale
+
+        animate glow {
+            color -> "#ff9d5c"
+            duration: 800
+            at: finale
+        }
+
+        animate camera {
+            position.x -> 0
+            position.z -> 6
+            duration: 1000
+            easing: easeInOut
+            at: finale + 400
+        }
+    }
+}
+
+scene reveal {
+    camera { position: (0, 1, 6) }
+    ambientLight fill { intensity: 0.5 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+
+    sphere orb {
+        position: (0, 0, 0)
+        scale: (0.01, 0.01, 0.01)
+        color: "#d4a574"
+        material.metalness: 0.7
+        material.roughness: 0.2
+    }
+
+    timeline pop {
+        animate orb {
+            scale.x -> 1
+            scale.y -> 1
+            scale.z -> 1
+            duration: 600
+            easing: easeOut
+        }
+    }
+}
+
+page "AXIS - Scroll Story" {
+    container hero {
+        direction: "column"
+        gap: 8
+        padding: 32
+        background: "#0b0b12"
+
+        heading title { content: "Scroll to explore" color: white size: 40 opacity: 0 }
+        text subtitle { content: "Ordinary page scroll, driving a real 3D timeline." color: "#9c9cb8" opacity: 0 }
+    }
+
+    animate title { opacity -> 1 duration: 700ms }
+    animate subtitle { opacity -> 1 duration: 700ms delay: 200ms }
+
+    viewport stage {
+        scene: "journey"
+        scrollTimeline: "arc"
+        width: "100%"
+        height: 2400
+        background: "#0b0b12"
+    }
+
+    container spacer {
+        direction: "column"
+        padding: 64
+        background: "#101018"
+
+        heading midtitle { content: "Still an ordinary page" color: white size: 28 }
+        paragraph mid { content: "Regular content flows above, between, and below a scroll-linked viewport exactly like it would around any other element - AXIS doesn't need a special layout mode for this." color: "#9c9cb8" }
+    }
+
+    viewport small {
+        scene: "reveal"
+        scrollTimeline: "pop"
+        width: "100%"
+        height: 900
+        background: "#0b0b12"
+    }
+
+    container footer {
+        direction: "column"
+        padding: 64
+        background: "#0b0b12"
+
+        text end { content: "End of the story." color: "#9c9cb8" }
+    }
+}

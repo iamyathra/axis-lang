@@ -1,0 +1,76 @@
+// A personal-site page, using AXIS v2's wider vocabulary: heading levels,
+// paragraph, an absolutely-positioned badge, border/shadow, and the `css`
+// escape hatch for a couple of finishing touches nothing else models yet.
+// Still the same idea as v1's portfolio - a hero, a loop-generated project
+// list, a click counter - just no longer limited to a single flat `text`
+// element for everything.
+
+page "Alex - Portfolio" {
+  let clicks = 0
+
+  container page {
+    direction: "column"
+    padding: 48
+    gap: 40
+    background: "#0b0b0f"
+    css: "min-height: 100vh"
+
+    container hero {
+      direction: "column"
+      gap: 8
+      position: "relative"
+
+      text badge {
+        content: "Available for work"
+        position: "absolute"
+        top: -16
+        right: 0
+        color: "#a5b4fc"
+        background: "#1a1a2e"
+        border: "1px solid #4f46e5"
+        padding: 6
+        radius: 999
+        size: 12
+      }
+
+      heading name { content: "Hi, I'm Alex." level: 1 color: white size: 40 weight: "bold" }
+      paragraph tagline {
+        content: "I build small tools and interactive things for the web."
+        color: "#9a9aa5"
+        size: 18
+      }
+    }
+
+    container projects {
+      direction: "column"
+      gap: 12
+
+      heading projectsHeading { content: "Projects" level: 2 color: white size: 22 }
+
+      for i in range(0, 3) {
+        link ("project" + i) {
+          label: "Project " + (i + 1)
+          href: "#"
+          color: "#7dd3fc"
+        }
+      }
+    }
+
+    container contactCard {
+      direction: "column"
+      gap: 12
+      padding: 24
+      background: "#141420"
+      radius: 12
+      shadow: "0 10px 30px rgba(0, 0, 0, 0.4)"
+      border: "1px solid #23232f"
+
+      button contactBtn { label: "Say hi" color: white background: "#4f46e5" padding: 14 radius: 8 }
+      text clickLabel { content: "Clicked " + clicks + " times" color: "#9a9aa5" size: 14 }
+    }
+  }
+
+  on contactBtn.click {
+    clicks = clicks + 1
+  }
+}

@@ -1,0 +1,276 @@
+// AXIS FPS Flagship Proof: a real, playable first-person arena, built
+// almost entirely from primitives that already existed before this file -
+// the game-foundation phase's ECS/input/camera packages (copied in here
+// unchanged, from examples/game-foundation/ and examples/fps-controls/),
+// pointer lock, and `on tick`. The one genuinely new thing this milestone
+// added to AXIS's own source is `raycast.fromCamera()` (see
+// docs/fps-proof.md and docs/language.md's Raycasting section) - a
+// general-purpose "what's under the crosshair" query, not an FPS-specific
+// primitive. "Destroying" a target uses `axis_modules/axis-visibility/`'s
+// `visible` property - a third, independently-authored runtime extension
+// (see docs/runtime-extensions.md), needed because a scene's own objects
+// are NOT reactive (docs/language.md's Reactive structure section) - so
+// object-pooling (pre-declare, toggle visible/invisible) is what actually
+// makes "destroying" something work, composed entirely from existing
+// mechanisms plus that one extension.
+//
+// Run with: node bin/axis.js run examples/fps/main.ax
+// Click into the arena to lock the pointer, then WASD to move, mouse to
+// look, click to shoot. Press R to reset the round.
+import makeInputState from "input"
+
+import makeFpsCamera from "camera"
+
+import makeWorld from "ecs"
+
+import makeEntity from "ecs"
+
+// A component, in the same "data with behavior" shape
+// docs/language.md's own Health example uses - nothing ECS-specific
+// about this fn itself, it's ordinary AXIS code composed with makeEntity.
+fn makeHealth(maxValue) {
+    let h = { type: "Health", max: maxValue, value: maxValue }
+    h.damage = fn(amount) { self.value = max(0, self.value - amount) }
+    h.isDead = fn() { return self.value <= 0 }
+    return h
+}
+
+// Builds a fresh world with all four targets alive - used both for the
+// scene's initial state and for a reset, so there's exactly one place
+// that defines "what a fresh round looks like."
+fn freshWorld() {
+    let w = makeWorld()
+    w.spawn(makeEntity("target0").add(makeHealth(3)))
+    w.spawn(makeEntity("target1").add(makeHealth(3)))
+    w.spawn(makeEntity("target2").add(makeHealth(3)))
+    w.spawn(makeEntity("target3").add(makeHealth(3)))
+    return w
+}
+
+// Shared with the HUD page (see docs/architecture/reactive-state.md) -
+// the scene below is the only thing that ever writes to these.
+state targetsDestroyed = 0
+
+state totalTargets = 4
+
+state ammoReady = true
+
+state statusText = "Click the arena to play"
+
+scene arena {
+    camera {
+        position: (0, 1.6, 10)
+    }
+
+    ambientLight fill {
+        intensity: 0.5
+    }
+
+    directionalLight sun {
+        intensity: 0.8
+        direction: (-1, -2, -1)
+    }
+
+    plane floor {
+        position: (0, 0, 0)
+        rotation: (-90, 0, 0)
+        scale: (24, 24, 1)
+        color: "#2b2b33"
+    }
+
+    cube wallBack {
+        position: (0, 3, -14)
+        scale: (24, 6, 1)
+        color: "#3a3a45"
+    }
+
+    cube wallLeft {
+        position: (-12, 3, 0)
+        scale: (1, 6, 24)
+        color: "#3a3a45"
+    }
+
+    cube wallRight {
+        position: (12, 3, 0)
+        scale: (1, 6, 24)
+        color: "#3a3a45"
+    }
+
+    sphere target0 {
+        position: (-7, 1.5, -11)
+        scale: (2, 2, 2)
+        color: "#ef4444"
+    }
+
+    sphere target1 {
+        position: (-2.3, 1.5, -12.5)
+        scale: (2, 2, 2)
+        color: "#ef4444"
+    }
+
+    sphere target2 {
+        position: (2.3, 1.5, -12.5)
+        scale: (2, 2, 2)
+        color: "#ef4444"
+    }
+
+    sphere target3 {
+        position: (7, 1.5, -11)
+        scale: (2, 2, 2)
+        color: "#ef4444"
+    }
+
+    let input = makeInputState()
+
+    let fps = makeFpsCamera({ sensitivity: 0.2, speed: 5 })
+
+    let world = freshWorld()
+
+    // Data-driven, not hardcoded into a "shoot" primitive (post-milestone
+    // directive item 11) - a different weapon is just a different record.
+    let weapon = { damage: 1, cooldown: 0.35, range: 40 }
+
+    let cooldownRemaining = 0
+
+    on keydown {
+        input.handleKeyDown(key)
+        if (key == "r" || key == "R") {
+            world = freshWorld()
+            cooldownRemaining = 0
+            targetsDestroyed = 0
+
+            // Rebuilt here, not hoisted to a scene-level `let` - a
+            // top-level `let`'s own initializer is evaluated at build
+            // time (Node), before any scene object actually exists as a
+            // bindable value (that only happens once a real browser
+            // mounts the scene) - see docs/fps-proof.md's own note on
+            // this real, honest limitation.
+            for ref in [{ name: "target0", obj: target0 }, { name: "target1", obj: target1 }, { name: "target2", obj: target2 }, { name: "target3", obj: target3 }] {
+                ref.obj.visible = true
+            }
+            camera.position = (0, 1.6, 10)
+            fps.yaw = 0
+            fps.pitch = 0
+            camera.target = fps.lookTarget(camera.position)
+            statusText = "Round reset"
+        }
+    }
+
+    on keyup {
+        input.handleKeyUp(key)
+    }
+
+    on mousemove {
+        input.handleMouseMove(dx, dy)
+    }
+
+    on mousedown {
+        if (button == 0) {
+            if (pointerLock.isLocked) {
+                if (cooldownRemaining <= 0) {
+                    cooldownRemaining = weapon.cooldown
+                    let hit = raycast.fromCamera(weapon.range)
+
+                    // A miss covers three distinct cases, deliberately
+                    // treated the same way: nothing in range at all
+                    // (`hit == null`), hitting real scene geometry that
+                    // isn't a tracked target (the arena's own floor/
+                    // walls - `raycast.fromCamera` considers every named
+                    // object, not just targets, exactly as documented),
+                    // or hitting an already-destroyed target (`visible:
+                    // false`, but see docs/fps-proof.md: three.js's own
+                    // Raycaster already skips invisible objects, so this
+                    // last case can't actually occur once axis-visibility
+                    // hides it - `entity`/`health` still guard it anyway,
+                    // defensively).
+                    let entity = hit == null ? null : find(world.entities, fn(e) { return e.name == hit.name })
+                    let health = entity == null ? null : entity.get("Health")
+                    if (health != null && !health.isDead()) {
+                        health.damage(weapon.damage)
+                        if (health.isDead()) {
+                            targetsDestroyed = targetsDestroyed + 1
+                            let refs = [{ name: "target0", obj: target0 }, { name: "target1", obj: target1 }, { name: "target2", obj: target2 }, { name: "target3", obj: target3 }]
+                            let ref = find(refs, fn(r) { return r.name == hit.name })
+                            if (ref != null) {
+                                ref.obj.visible = false
+                            }
+                            statusText = "Target down"
+                        } else {
+                            statusText = "Hit"
+                        }
+                    } else {
+                        statusText = "Miss"
+                    }
+                }
+            } else {
+                pointerLock.request()
+                statusText = "Playing - click to shoot, R to reset"
+            }
+        }
+    }
+
+    on tick {
+        if (pointerLock.isLocked) {
+            fps.look(input.mouseDX, input.mouseDY)
+        }
+        let forwardInput = 0
+        let strafeInput = 0
+        if (input.isKeyDown("w") || input.isKeyDown("ArrowUp")) {
+            forwardInput = forwardInput + 1
+        }
+        if (input.isKeyDown("s") || input.isKeyDown("ArrowDown")) {
+            forwardInput = forwardInput - 1
+        }
+        if (input.isKeyDown("d") || input.isKeyDown("ArrowRight")) {
+            strafeInput = strafeInput + 1
+        }
+        if (input.isKeyDown("a") || input.isKeyDown("ArrowLeft")) {
+            strafeInput = strafeInput - 1
+        }
+        camera.position = fps.move(camera.position, forwardInput, strafeInput, dt)
+        camera.target = fps.lookTarget(camera.position)
+        if (cooldownRemaining > 0) {
+            cooldownRemaining = cooldownRemaining - dt
+        }
+        ammoReady = cooldownRemaining <= 0
+        input.endFrame()
+    }
+}
+
+page "FPS Arena" {
+    container app {
+        position: "relative"
+        width: 900
+        height: 600
+        background: "#0b0b0f"
+
+        container hud {
+            position: "absolute"
+            direction: "row"
+            gap: 24
+            padding: 12
+            background: "#00000080"
+
+            text status {
+                content: statusText
+                color: white
+            }
+
+            text score {
+                content: "Destroyed: " + str(targetsDestroyed) + "/" + str(totalTargets)
+                color: "#facc15"
+            }
+
+            text ammo {
+                content: ammoReady ? "Ready" : "Reloading"
+                color: "#60a5fa"
+            }
+        }
+
+        viewport stage {
+            width: 900
+            height: 600
+            scene: "arena"
+        }
+    }
+}

@@ -1,0 +1,279 @@
+// A product showroom - the v3.8 3D/atmosphere surface examples/nimbus-studio.ax
+// doesn't showcase (a scrolling narrative, not a still orbitable product
+// shot): an interactive `controls: "orbit"` camera with `fov`/`target`, an
+// authorable `hemisphereLight`, `environment` background + fog, a real
+// `material.map` texture backdrop, live material swapping (color/metalness/
+// roughness) driven by ordinary `state`, and `loop`/`on TIMELINE.complete`
+// working together for a "product arrives, light turns on, then idles"
+// intro. Run with `axis run examples/showroom.ax`.
+//
+// Deliberately doesn't combine `controls: "orbit"` with an *animated*
+// camera move - OrbitControls owns the camera's position once a scene has
+// it, so scripting a camera dolly on top would fight it every frame; see
+// examples/nimbus-studio.ax for the animated-camera pattern instead, on a
+// scene with a fixed viewpoint.
+fn variantColor(v) {
+    if (v == "matte") {
+        return "#2b2b30"
+    }
+    if (v == "steel") {
+        return "#b8bec4"
+    }
+    return "#c9a15a"
+}
+
+fn variantMetalness(v) {
+    if (v == "matte") {
+        return 0.1
+    }
+    return 0.85
+}
+
+fn variantRoughness(v) {
+    if (v == "matte") {
+        return 0.85
+    }
+    if (v == "steel") {
+        return 0.25
+    }
+    return 0.35
+}
+
+fn swatchBorder(current, thisVariant) {
+    if (current == thisVariant) {
+        return "#4a90e2"
+    }
+    return "#33333d"
+}
+
+state variant = "matte"
+
+state lightOn = false
+
+scene showroom {
+    camera {
+        position: (2.6, 1.8, 3.6)
+        fov: 40
+        target: (0, 0.9, 0)
+        controls: "orbit"
+    }
+
+    environment {
+        background: "#1c1c22"
+        fogColor: "#1c1c22"
+        fogNear: 6
+        fogFar: 14
+    }
+
+    hemisphereLight sky {
+        color: "#e8eeff"
+        groundColor: "#15151a"
+        intensity: 0.5
+    }
+
+    directionalLight key {
+        direction: (-1, -1.4, -0.6)
+        intensity: 1.1
+        shadows: true
+    }
+
+    pointLight rim {
+        position: (-2, 1.5, -1.6)
+        color: "#ffb070"
+        intensity: 0
+    }
+
+    plane backdrop {
+        position: (0, 2, -2)
+        scale: (1.6, 1.6, 1)
+        material.map: "./assets/studio-backdrop.png"
+        material.roughness: 1
+    }
+
+    plane floor {
+        position: (0, 0, 0)
+        rotation: (-90, 0, 0)
+        scale: (1.2, 1.2, 1)
+        color: "#242430"
+        material.roughness: 0.9
+        receiveShadow: true
+    }
+
+    group lamp {
+        cylinder base {
+            position: (0, 0.08, 0)
+            scale: (0.9, 0.16, 0.9)
+            material.color: variantColor(variant)
+            material.metalness: variantMetalness(variant)
+            material.roughness: variantRoughness(variant)
+            castShadow: true
+        }
+
+        cylinder neck {
+            position: (0, 0.7, 0)
+            scale: (0.08, 1.2, 0.08)
+            material.color: variantColor(variant)
+            material.metalness: variantMetalness(variant)
+            material.roughness: variantRoughness(variant)
+            castShadow: true
+        }
+
+        sphere head {
+            position: (0, 1.4, 0)
+            scale: (0.32, 0.32, 0.32)
+            color: "#fff6e0"
+            material.emissive: "#fff6e0"
+            material.emissiveIntensity: 0
+            castShadow: true
+        }
+    }
+
+    // The product "arrives" already built (no assembly animation needed -
+    // `group`'s own transform is what a real intro would move/scale, not
+    // shown here to keep this focused) and its light turns on once settled;
+    // `introPulse` completing is what hands off to the idle `turntable`
+    // loop, the same complete-then-loop shape examples/nimbus-studio.ax's
+    // own heroScene uses, just triggering a light instead of a character sway.
+    timeline introPulse {
+        animate head {
+            material.emissiveIntensity -> 0.6
+            duration: 500
+            easing: easeOutCubic
+        }
+
+        animate rim {
+            intensity -> 3
+            duration: 500
+            at: 0
+            easing: easeOutCubic
+        }
+    }
+
+    timeline turntable {
+        loop: true
+
+        animate lamp {
+            rotation.y -> 360deg
+            duration: 9000
+            easing: linear
+        }
+    }
+
+    on introPulse.complete {
+        lightOn = true
+        play turntable
+    }
+
+    // A real raycast hit on the actual sphere, not a flat click-anywhere
+    // hitbox - the head is what visually reads as "the light," so it's the
+    // only part that's interactive.
+    on head.click {
+        lightOn = !lightOn
+        if (lightOn) {
+            animate head {
+                material.emissiveIntensity -> 0.6
+                duration: 300
+                easing: easeOutCubic
+            }
+            animate rim {
+                intensity -> 3
+                duration: 300
+                easing: easeOutCubic
+            }
+        } else {
+            animate head {
+                material.emissiveIntensity -> 0
+                duration: 300
+                easing: easeOutCubic
+            }
+            animate rim {
+                intensity -> 0
+                duration: 300
+                easing: easeOutCubic
+            }
+        }
+    }
+}
+
+page "Showroom" {
+    container layout {
+        direction: "row"
+        align: "center"
+        gap: 32
+        padding: 40
+        background: "#101014"
+        responsive: { mobile: { direction: "column", padding: 20, gap: 20 } }
+
+        viewport stage {
+            scene: "showroom"
+            width: "60%"
+            height: 480
+            radius: 16
+            responsive: { mobile: { width: "100%", height: 320 } }
+        }
+
+        container info {
+            direction: "column"
+            gap: 16
+            width: "40%"
+            responsive: { mobile: { width: "100%" } }
+
+            heading title {
+                content: "Aperture Desk Lamp"
+                level: 1
+                color: white
+                size: 30
+            }
+
+            paragraph body {
+                content: "Drag the model to orbit it, scroll to zoom, and click the lamp's head to switch it on or off."
+                color: "#9c9cb8"
+                size: 15
+            }
+
+            container swatches {
+                direction: "row"
+                gap: 10
+
+                button swatchMatte {
+                    label: "Matte black"
+                    background: "#18181e"
+                    color: white
+                    padding: 10
+                    radius: 8
+                    border: "2px solid " + swatchBorder(variant, "matte")
+                }
+
+                button swatchSteel {
+                    label: "Brushed steel"
+                    background: "#18181e"
+                    color: white
+                    padding: 10
+                    radius: 8
+                    border: "2px solid " + swatchBorder(variant, "steel")
+                }
+
+                button swatchBrass {
+                    label: "Warm brass"
+                    background: "#18181e"
+                    color: white
+                    padding: 10
+                    radius: 8
+                    border: "2px solid " + swatchBorder(variant, "brass")
+                }
+            }
+        }
+    }
+
+    on swatchMatte.click {
+        variant = "matte"
+    }
+
+    on swatchSteel.click {
+        variant = "steel"
+    }
+
+    on swatchBrass.click {
+        variant = "brass"
+    }
+}

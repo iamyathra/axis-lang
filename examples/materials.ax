@@ -1,0 +1,105 @@
+// AXIS's material/lighting/shadow example - the visual-quality gap the
+// v3.1-era scenes had (a flat color per shape, no shadows, no way to touch
+// a loaded model's own materials). Proves:
+//
+// - `material.metalness`/`material.roughness`/`material.opacity`/
+//   `material.emissive`/`material.emissiveIntensity` on a built-in shape -
+//   a dotted property, exactly the same grammar `rotation.y` already uses,
+//   not new syntax.
+// - `directionalLight { shadows: true }` and a second `spotLight` - real
+//   shadow casting, with `castShadow`/`receiveShadow` per object (the
+//   ground plane receives but doesn't cast; everything else defaults to
+//   both).
+// - `material.*` on a loaded `model` overlays the file's own materials
+//   instead of replacing them - see docs/language.md's Materials section.
+// - Both ways a material property is genuinely live: `metal`'s roughness is
+//   a `state`-bound reactive property (clicking it flips a shared `state`,
+//   same mechanism `examples/configurator.ax` already proves for position/
+//   scale/color), and `glowBox`'s emissive glow is mutated directly from
+//   its own `on click` handler with no `state` at all - `object.material.
+//   field = value`, the same as `object.color = value` already worked.
+
+scene main {
+    camera { position: (0, 3, 8) controls: "orbit" }
+
+    ambientLight fill { intensity: 0.25 }
+
+    directionalLight sun {
+        direction: (-1, -1.4, -0.6)
+        intensity: 1.6
+        shadows: true
+    }
+
+    spotLight accent {
+        position: (-3, 4, 2)
+        target: (0, 0, 0)
+        color: "#8fd3ff"
+        intensity: 40
+        angle: 25
+        penumbra: 0.4
+    }
+
+    state roughness = 0.15
+
+    plane ground {
+        position: (0, -1, 0)
+        rotation: (-90, 0, 0)
+        scale: (10, 10, 1)
+        color: "#2a2a34"
+        material.roughness: 0.95
+        material.metalness: 0
+        receiveShadow: true
+        castShadow: false
+    }
+
+    sphere metal {
+        position: (-1.6, 0, 0)
+        color: "#d4a574"
+        material.metalness: 0.9
+        material.roughness: roughness
+    }
+
+    cube glowBox {
+        position: (1.6, 0, 0)
+        color: "#201810"
+        material.emissive: "#ff6a3d"
+        material.emissiveIntensity: 0
+    }
+
+    model pyramid {
+        src: "./assets/pyramid.glb"
+        position: (0, 0.4, -2.5)
+        scale: (0.8, 0.8, 0.8)
+        material.metalness: 1
+        material.roughness: 0.3
+    }
+
+    animate pyramid {
+        rotation.y -> 360deg
+        duration: 10s
+        repeat: infinite
+        easing: linear
+    }
+
+    // Reactive: flips a shared `state` - `metal`'s own `material.roughness`
+    // binding above re-evaluates and patches the live material after this
+    // handler runs, exactly like a shape's `position`/`color` already does.
+    on metal.click {
+        if (roughness > 0.3) {
+            roughness = 0.15
+        } else {
+            roughness = 0.9
+        }
+    }
+
+    // Direct: no `state` involved at all - `glowBox.material.
+    // emissiveIntensity` is read back and reassigned right here, the same
+    // as `box.color = red` always could.
+    on glowBox.click {
+        if (glowBox.material.emissiveIntensity > 0) {
+            glowBox.material.emissiveIntensity = 0
+        } else {
+            glowBox.material.emissiveIntensity = 2.5
+        }
+    }
+}

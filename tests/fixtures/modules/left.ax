@@ -1,0 +1,5 @@
+import helper from "./shared.ax"
+
+export fn useLeft(x) {
+    return helper(x) + "-left"
+}

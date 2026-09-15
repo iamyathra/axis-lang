@@ -1,0 +1,78 @@
+// Data with behavior (Phase E of the general-purpose-language pivot): a
+// record's own function fields can read and mutate the record they belong
+// to via `self`, bound automatically the moment a method is read off a
+// record with `.` - no new syntax, no class/type keyword. See
+// docs/language.md's "Data with behavior" section.
+//
+// makeHealth is an ordinary function returning an ordinary record - the
+// "component" here (in the entity/component sense, not AXIS's own
+// scene/page `component` keyword) is just data, and `damage`/`heal`/
+// `isDead` are its behavior, composed the same way any other value would
+// be. This is the general primitive the whole ECS/game-development
+// direction is meant to build on - nothing here is hardcoded into AXIS
+// itself.
+fn makeHealth(maxValue) {
+    let health = { max: maxValue, value: maxValue }
+    health.damage = fn(amount) { self.value = max(0, self.value - amount) }
+    health.heal = fn(amount) { self.value = min(self.max, self.value + amount) }
+    health.isDead = fn() { return self.value <= 0 }
+    return health
+}
+
+page "Entities" {
+    state player = makeHealth(100)
+
+    state log = "Ready."
+
+    container app {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b0f"
+
+        heading title {
+            content: "HP: " + str(player.value) + " / " + str(player.max)
+            color: white
+        }
+
+        text status {
+            content: log
+            color: "#9ca3af"
+        }
+
+        container buttons {
+            direction: "row"
+            gap: 12
+
+            button hit {
+                label: "Take 20 damage"
+                color: white
+                background: "#802020"
+                padding: 12
+                radius: 8
+            }
+
+            button healBtn {
+                label: "Heal 10"
+                color: white
+                background: "#206020"
+                padding: 12
+                radius: 8
+            }
+        }
+    }
+
+    on hit.click {
+        player.damage(20)
+        if (player.isDead()) {
+            log = "You died."
+        } else {
+            log = "Ouch."
+        }
+    }
+
+    on healBtn.click {
+        player.heal(10)
+        log = "Feels better."
+    }
+}

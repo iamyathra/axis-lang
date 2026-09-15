@@ -1,0 +1,200 @@
+// AXIS's sticky-scroll showcase: the "tall wrapper, pinned inner element"
+// scrollytelling pattern - a `viewport` visually pinned in place
+// (`position: "sticky"`) while its own tall wrapping `container` scrolls
+// past underneath it, driving a real 3D timeline the entire time it's
+// pinned.
+//
+// The key architectural point this proves: `scrollTimeline`/
+// `scrollProgress` measure progress from whichever element they're
+// declared on - here, that's the WRAPPER (`pinA`/`pinB`, both plain,
+// normally-flowing elements with a real scroll-through height), not the
+// STICKY child (`stageA`/`stageB`) whose own bounding box stops moving the
+// entire time it's pinned. Nothing new was built for this: `scrollTimeline`
+// on a non-viewport element already drove a page-level timeline (see
+// examples/unified-story.ax), a page-level timeline step could already
+// cross-reference a viewport's embedded scene, and `position` was already
+// an arbitrary CSS string. Sticky positioning is real CSS, owned entirely
+// by the browser - AXIS's own scroll-progress math never looks at the
+// sticky child at all. See docs/architecture/sticky-scroll-timeline.md.
+//
+// Two independent pinned sections (A and B) prove this composes with
+// everything else a viewport already does: A is also `visible`-toggleable
+// (conditional viewport rendering) and its `scrollProgress` feeds a shared
+// `state` a page readout displays live; a third, perfectly ordinary,
+// non-sticky, non-scroll-linked viewport (`plain`) is the ordinary-viewport
+// regression check - it must behave exactly as it always has.
+
+state showA = true
+state pinAProgress = 0
+
+scene sceneA {
+    camera { position: (0, 2, 8) }
+    ambientLight fill { intensity: 0.4 }
+    directionalLight sun { direction: (-1, -1.2, -0.6) intensity: 1.2 }
+
+    cube box {
+        color: "#4a90e2"
+        scale: (0.4, 0.4, 0.4)
+        material.metalness: 0.1
+        material.roughness: 0.6
+    }
+}
+
+scene sceneB {
+    camera { position: (0, 2, 8) }
+    ambientLight fill { intensity: 0.4 }
+    directionalLight sun { direction: (-1, -1.2, -0.6) intensity: 1.2 }
+
+    sphere orb {
+        color: "#d4a574"
+        material.metalness: 0.2
+        material.roughness: 0.5
+    }
+}
+
+scene scenePlain {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4caf50" }
+
+    animate box {
+        rotation.y -> 360deg
+        duration: 4000
+        repeat: infinite
+        easing: linear
+    }
+}
+
+page "AXIS - Sticky Scroll Story" {
+    container intro {
+        direction: "column"
+        gap: 8
+        padding: 32
+        background: "#0b0b12"
+
+        heading title { content: "The stage stays put. The story moves." color: white size: 34 }
+        text subtitle { content: "Scroll - each pinned viewport tracks its OWN wrapper's scroll range, fully independently." color: "#9c9cb8" }
+
+        button toggleA { label: "Toggle pinned section A" color: white background: "#4a5cff" padding: 12 }
+        text progressReadout { content: "A's scroll progress: " + round(pinAProgress * 100) + "%" color: "#8fd3ff" }
+    }
+
+    on toggleA.click {
+        showA = !showA
+    }
+
+    // Section A - tall wrapper, sticky child, its own scrollTimeline AND a
+    // scrollProgress feeding a shared `state` a page-level text reads live.
+    container pinA {
+        direction: "column"
+        height: 2800
+        background: "#0b0b12"
+        scrollTimeline: "revealA"
+        scrollProgress: "pinAProgress"
+
+        viewport stageA {
+            scene: "sceneA"
+            position: "sticky"
+            top: 0
+            width: "100%"
+            height: 500
+            radius: 16
+            visible: showA
+        }
+    }
+
+    container between {
+        direction: "column"
+        padding: 48
+        background: "#101018"
+
+        paragraph mid { content: "Ordinary content, flowing normally between the two pinned sections - AXIS doesn't need a special layout mode for any of this." color: "#9c9cb8" }
+    }
+
+    // Section B - a second, completely independent pinned section: its own
+    // wrapper height, its own scrollTimeline, no shared state with A at all.
+    container pinB {
+        direction: "column"
+        height: 2200
+        background: "#0b0b12"
+        scrollTimeline: "revealB"
+
+        viewport stageB {
+            scene: "sceneB"
+            position: "sticky"
+            top: 0
+            width: "100%"
+            height: 460
+            radius: 16
+        }
+    }
+
+    container plainSection {
+        direction: "column"
+        padding: 32
+        background: "#0b0b12"
+
+        heading plainTitle { content: "An ordinary viewport" color: white size: 24 }
+        text plainNote { content: "Not sticky, not scroll-linked - mounts once, spins forever, completely unaffected by anything above." color: "#9c9cb8" }
+
+        viewport plain { scene: "scenePlain" width: 320 height: 240 radius: 12 }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 64
+        background: "#0b0b12"
+
+        text end { content: "End." color: "#9c9cb8" }
+    }
+
+    timeline revealA {
+        animate ("stageA.box") {
+            scale.x -> 1.3
+            scale.y -> 1.3
+            scale.z -> 1.3
+            duration: 1000
+            easing: easeOut
+        }
+
+        animate ("stageA.box") {
+            rotation.y -> 360deg
+            duration: 1600
+            easing: easeInOut
+            at: previous - 400
+        }
+
+        animate ("stageA.camera") {
+            position.z -> 5
+            duration: 1600
+            easing: easeInOut
+            at: 0
+        }
+    }
+
+    timeline revealB {
+        animate ("stageB.orb") {
+            scale.x -> 1.4
+            scale.y -> 1.4
+            scale.z -> 1.4
+            duration: 900
+            easing: easeOut
+        }
+
+        animate ("stageB.orb") {
+            material.metalness -> 0.9
+            material.roughness -> 0.1
+            duration: 1200
+            at: previous
+        }
+
+        animate ("stageB.camera") {
+            position.x -> 3
+            position.z -> 6
+            duration: 1800
+            easing: easeInOut
+            at: 0
+        }
+    }
+}

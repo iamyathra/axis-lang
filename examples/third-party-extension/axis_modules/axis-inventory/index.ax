@@ -1,0 +1,89 @@
+// axis-inventory: a small, reusable stack-based item tracker - the second
+// package in the Third-Party Extension Proof (see docs/extensions.md).
+// Proves the same architecture generalizes across two independently-
+// authored, unrelated packages (this one has nothing to do with
+// axis-tween's value interpolation) rather than happening to work for
+// one convenient example. Built entirely from self-bound record methods,
+// arrays, and the stdlib's map/filter/reduce - zero changes to src/,
+// authored strictly after the "core freeze" commit.
+//
+// Deliberately a stack-of-named-quantities model (add/remove/count), not
+// a full item-definition/rarity/equipment system - the smallest shape
+// that's still genuinely reusable, not a speculative feature-complete
+// inventory engine.
+
+// Records have no dynamic/computed field access in AXIS (`record[key]`
+// isn't expressible - see docs/language.md's "Local packages" note and
+// docs/extensions.md's Limitations section), so items are held as a
+// plain array of `{name, qty}` records rather than a name -> qty map,
+// searched by `indexOf` below - the same pattern
+// examples/keyboard-input/axis_modules/input/'s held-key tracker uses.
+export fn createInventory() {
+    let inventory = { items: [] }
+
+    inventory.indexOf = fn(name) {
+        let i = 0
+        while (i < len(self.items)) {
+            if (self.items[i].name == name) {
+                return i
+            }
+            i = i + 1
+        }
+        return -1
+    }
+
+    inventory.addItem = fn(name, qty) {
+        let idx = self.indexOf(name)
+        if (idx >= 0) {
+            self.items[idx] = { name: name, qty: self.items[idx].qty + qty }
+        } else {
+            push(self.items, { name: name, qty: qty })
+        }
+    }
+
+    // Returns whether there was enough to remove. Removing the last of an
+    // item drops its entry from `items` entirely, rather than leaving a
+    // zero-quantity record behind.
+    inventory.removeItem = fn(name, qty) {
+        let idx = self.indexOf(name)
+        if (idx < 0) {
+            return false
+        }
+        if (self.items[idx].qty < qty) {
+            return false
+        }
+        let remaining = self.items[idx].qty - qty
+        if (remaining <= 0) {
+            self.items = filter(self.items, fn(item) { return item.name != name })
+        } else {
+            self.items[idx] = { name: name, qty: remaining }
+        }
+        return true
+    }
+
+    inventory.countOf = fn(name) {
+        let idx = self.indexOf(name)
+        if (idx < 0) {
+            return 0
+        }
+        return self.items[idx].qty
+    }
+
+    inventory.hasItem = fn(name, qty) {
+        return self.countOf(name) >= qty
+    }
+
+    inventory.totalCount = fn() {
+        return reduce(self.items, fn(total, item) { return total + item.qty }, 0)
+    }
+
+    // Returns a copy, not the live internal array - a caller holding onto
+    // this result shouldn't see it silently change (or be able to mutate
+    // the inventory's own state) just because `map` here happens to be
+    // pure (see the stdlib's own "all pure" note in docs/language.md).
+    inventory.listItems = fn() {
+        return map(self.items, fn(item) { return { name: item.name, qty: item.qty } })
+    }
+
+    return inventory
+}

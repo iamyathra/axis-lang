@@ -1,0 +1,5 @@
+import shout from "./utils.ax"
+
+export component Card(title) {
+    heading h { content: shout(title) }
+}

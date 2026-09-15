@@ -1,0 +1,108 @@
+// An ordinary marketing site - header, hero, a features section built
+// procedurally from two parallel arrays, and a contact form. Nothing
+// spatial or playful here on purpose: this is what most real websites
+// actually look like, built from the same primitives as everything else.
+
+page "Nimbus - Cloud Backups" {
+  let featureTitles = ["Automatic", "Encrypted", "Instant restore"]
+  let featureDescs = [
+    "Nimbus watches your folders and backs up changes as they happen.",
+    "Every byte is encrypted before it leaves your machine.",
+    "Restore a single file or an entire drive in a couple of clicks."
+  ]
+
+  container page {
+    direction: "column"
+    background: "white"
+
+    container header {
+      direction: "row"
+      justify: "between"
+      align: "center"
+      padding: 24
+
+      text logo { content: "Nimbus" color: "#111827" size: 20 weight: "bold" }
+
+      container nav {
+        direction: "row"
+        gap: 24
+
+        link featuresLink { label: "Features" href: "#features" color: "#374151" }
+        link pricingLink { label: "Pricing" href: "#pricing" color: "#374151" }
+        link contactLink { label: "Contact" href: "#contact" color: "#374151" }
+      }
+    }
+
+    container hero {
+      direction: "column"
+      align: "center"
+      gap: 16
+      padding: 96
+
+      heading headline {
+        content: "Back up everything. Worry about nothing."
+        level: 1
+        align: "center"
+        color: "#111827"
+        size: 44
+      }
+      paragraph sub {
+        content: "Nimbus watches your files and ships encrypted backups off-site automatically."
+        align: "center"
+        color: "#6b7280"
+        size: 18
+      }
+      button cta { label: "Start free trial" color: white background: "#4f46e5" padding: 16 radius: 8 }
+    }
+
+    container features {
+      direction: "row"
+      justify: "between"
+      gap: 24
+      padding: 64
+      background: "#f9fafb"
+
+      for i in range(0, 3) {
+        container ("feature" + i) {
+          direction: "column"
+          gap: 8
+          width: "30%"
+
+          heading ("featureTitle" + i) { content: featureTitles[i] level: 3 color: "#111827" size: 20 }
+          paragraph ("featureDesc" + i) { content: featureDescs[i] color: "#6b7280" size: 15 }
+        }
+      }
+    }
+
+    container contact {
+      direction: "column"
+      gap: 12
+      padding: 64
+
+      heading contactHeading { content: "Get in touch" level: 2 color: "#111827" }
+
+      form contactForm {
+        direction: "column"
+        gap: 12
+
+        input nameField { placeholder: "Your name" }
+        input emailField { placeholder: "you@example.com" kind: "email" }
+        button send { label: "Send" color: white background: "#4f46e5" padding: 12 radius: 8 }
+      }
+
+      text sent { content: "" color: "#16a34a" }
+
+      on contactForm.submit {
+        sent.content = "Thanks - we'll be in touch."
+      }
+    }
+
+    container footer {
+      direction: "row"
+      justify: "center"
+      padding: 32
+
+      text copyright { content: "(c) Nimbus" color: "#9ca3af" size: 14 }
+    }
+  }
+}

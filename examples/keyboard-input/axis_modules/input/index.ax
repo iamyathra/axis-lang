@@ -1,0 +1,28 @@
+// A minimal "held keys" tracker - the exact kind of convenience the
+// platform audit predicted a package could build on top of AXIS's raw
+// 'on keydown'/'on keyup' primitive (see
+// docs/architecture/2026-09-language-platform-audit.md's Phase H
+// addendum), rather than AXIS itself having an opinion on what "input"
+// means. Composes stdlib array functions (Phase A) - records have no
+// dynamic/computed field access in AXIS, so "which keys are held" is a
+// plain array, not a map keyed by key name.
+
+export fn makeKeyTracker() {
+    let tracker = { held: [] }
+
+    tracker.press = fn(key) {
+        if (!includes(self.held, key)) {
+            push(self.held, key)
+        }
+    }
+
+    tracker.release = fn(key) {
+        self.held = filter(self.held, fn(k) { return k != key })
+    }
+
+    tracker.isDown = fn(key) {
+        return includes(self.held, key)
+    }
+
+    return tracker
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B - two independent AXIS instances</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f8; color: #111; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; }
+  button { padding: 8px 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Two independent AXIS instances, one host page</h1>
+  <p>Each has its own inputs, its own animation, and its own click handler. Destroying one must not affect the other.</p>
+  <div id="hero-1"></div>
+  <div id="hero-2"></div>
+  <button id="destroy-1">Destroy instance 1 only</button>
+  <p id="status"></p>
+</main>
+
+<script type="module">
+  import { mount } from "/src/mount.js";
+
+  const source = await (await fetch("./hero.ax")).text();
+  const one = await mount(document.getElementById("hero-1"), source, { inputs: { title: "Instance One", intensity: 0.3 } });
+  const two = await mount(document.getElementById("hero-2"), source, { inputs: { title: "Instance Two", intensity: 0.9 } });
+
+  const status = document.getElementById("status");
+  let clicks1 = 0, clicks2 = 0;
+  one.on("notify", () => { clicks1++; render(); });
+  two.on("notify", () => { clicks2++; render(); });
+  function render() { status.textContent = `instance 1 clicks: ${clicks1} | instance 2 clicks: ${clicks2}`; }
+  render();
+
+  document.getElementById("destroy-1").addEventListener("click", () => {
+    one.destroy();
+    status.textContent += " | instance 1 destroyed";
+  });
+
+  window.__axisInstances = { one, two };
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+// click the cube. that's the whole demo.
+// `on` bodies run live in the browser, using real variables and an if.
+scene main {
+    camera {
+        position: (0, 2, 6)
+    }
+
+    ambientLight fill {
+        intensity: 0.6
+    }
+
+    let isOn = false
+
+    cube box {
+        position: (0, 0, 0)
+        color: red
+    }
+
+    on box.click {
+        isOn = !isOn
+        if (isOn) {
+            box.color = green
+        } else {
+            box.color = red
+        }
+    }
+
+    on box.hover {
+        box.scale = (1.15, 1.15, 1.15)
+    }
+
+    on box.unhover {
+        box.scale = (1, 1, 1)
+    }
+}

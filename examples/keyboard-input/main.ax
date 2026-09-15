@@ -1,0 +1,52 @@
+// Arrow-key movement, combining Phase H's new raw 'on keydown'/'on keyup'
+// primitive with 'on tick' (Phase C) and a local package (Phase F/G,
+// axis_modules/input/) for the "which keys are currently held" convenience
+// - nothing here required a change to AXIS's own source beyond adding the
+// keyboard events themselves. Run with:
+//   node bin/axis.js run examples/keyboard-input/main.ax
+import makeKeyTracker from "input"
+
+scene main {
+    camera {
+        position: (0, 5, 10)
+    }
+
+    ambientLight fill {
+        intensity: 0.7
+    }
+
+    let keys = makeKeyTracker()
+
+    let speed = 4
+
+    cube box {
+        position: (0, 0, 0)
+        color: "#4f46e5"
+    }
+
+    on keydown {
+        keys.press(key)
+    }
+
+    on keyup {
+        keys.release(key)
+    }
+
+    on tick {
+        let dx = 0
+        let dz = 0
+        if (keys.isDown("ArrowRight")) {
+            dx = dx + 1
+        }
+        if (keys.isDown("ArrowLeft")) {
+            dx = dx - 1
+        }
+        if (keys.isDown("ArrowDown")) {
+            dz = dz + 1
+        }
+        if (keys.isDown("ArrowUp")) {
+            dz = dz - 1
+        }
+        box.position = (box.position.x + dx * speed * dt, box.position.y, box.position.z + dz * speed * dt)
+    }
+}

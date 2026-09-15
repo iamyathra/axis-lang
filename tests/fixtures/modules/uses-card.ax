@@ -1,0 +1,5 @@
+import Card from "./card.ax"
+
+page Home {
+    Card projectA { title: "AXIS" }
+}

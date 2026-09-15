@@ -1,0 +1,29 @@
+// 'on tick { ... }' - a global, per-frame handler with no target, given
+// real, elapsed-time delta ('dt', in seconds) each time it runs. No physics
+// engine involved - the bounce itself is just ordinary AXIS code (an 'if'
+// and a velocity flip), the same general-purpose primitive a real physics
+// system would eventually be built on top of. See docs/language.md's
+// "Per-frame updates" section.
+scene main {
+    camera {
+        position: (0, 2, 8)
+    }
+
+    ambientLight fill {
+        intensity: 0.6
+    }
+
+    let velocityX = 2
+
+    cube box {
+        position: (0, 0, 0)
+        color: red
+    }
+
+    on tick {
+        if (box.position.x > 3 || box.position.x < -3) {
+            velocityX = 0 - velocityX
+        }
+        box.position = (box.position.x + velocityX * dt, box.position.y, box.position.z)
+    }
+}

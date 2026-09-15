@@ -1,0 +1,6 @@
+import useLeft from "./left.ax"
+import useRight from "./right.ax"
+
+page Home {
+    text label { content: useLeft("x") + " " + useRight("x") }
+}

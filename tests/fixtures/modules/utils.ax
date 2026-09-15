@@ -1,0 +1,10 @@
+export fn shout(x) {
+    return x + "!"
+}
+
+export let greeting = "hi"
+
+// not exported - importing this name should fail with a clear error
+fn secret() {
+    return "shh"
+}

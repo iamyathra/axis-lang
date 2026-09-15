@@ -1,0 +1,88 @@
+// AXIS Runtime Extension Architecture proof: a real page+scene, built
+// strictly after the "core freeze" checkpoint (see
+// docs/runtime-extensions.md and
+// docs/architecture/2026-09-language-platform-audit.md), importing two
+// independently-authored runtime extensions - axis-wireframe (a boolean
+// property) and axis-line-width (an animatable number) - that each
+// register a genuinely new, live-settable 3D scalar property via the
+// public registerScalarProperty API. Neither package required a single
+// change to AXIS's own source (git diff -- src/ is empty across every
+// commit that built them). The page's own text readouts mirror both
+// properties back from the live three.js objects (via the shared `state`
+// this scene and page already have - see docs/language.md's cross-domain
+// reactive state section), so the effect is visible without reading
+// WebGL pixels. Run with:
+//   node bin/axis.js run examples/runtime-extension-demo/main.ax
+import toggleWireframe from "axis-wireframe"
+
+import resetLineWidth from "axis-line-width"
+
+state wireframeOn = false
+
+state lineWidth = 1
+
+scene demo {
+    camera {
+        position: (0, 1.5, 5)
+    }
+
+    cube box {
+        position: (-1.2, 0, 0)
+        color: "#4a90e2"
+    }
+
+    sphere widthDemo {
+        position: (1.2, 0, 0)
+        color: "#e05a5a"
+    }
+
+    on box.click {
+        toggleWireframe(box)
+        wireframeOn = box.wireframe
+    }
+
+    on widthDemo.click {
+        animate widthDemo {
+            wireframeLinewidth -> 6
+            duration: 1.2s
+        }
+    }
+
+    on widthDemo.unhover {
+        resetLineWidth(widthDemo)
+    }
+
+    on tick {
+        lineWidth = widthDemo.wireframeLinewidth
+    }
+}
+
+page "Runtime Extension Demo" {
+    container app {
+        direction: "column"
+        gap: 12
+        padding: 24
+        background: "#0b0b0f"
+
+        heading title {
+            content: "Runtime Extension Proof"
+            color: white
+        }
+
+        text wireframeStatus {
+            content: "wireframe: " + str(wireframeOn)
+            color: "#9ca3af"
+        }
+
+        text lineWidthStatus {
+            content: "line width: " + str(lineWidth)
+            color: "#9ca3af"
+        }
+
+        viewport stage {
+            scene: "demo"
+            width: 500
+            height: 350
+        }
+    }
+}

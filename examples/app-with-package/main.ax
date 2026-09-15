@@ -1,0 +1,35 @@
+// A bare import ("badge", not "./badge.ax") resolves against
+// axis_modules/badge/index.ax, found by walking up from this file's own
+// directory - see docs/language.md's Modules section. Run with:
+//   node bin/axis.js run examples/app-with-package/main.ax
+import Badge from "badge"
+
+page "Status" {
+    container app {
+        direction: "column"
+        gap: 12
+        padding: 32
+        background: "#0b0b0f"
+
+        heading title {
+            content: "Deploys"
+            level: 1
+            color: white
+        }
+
+        Badge ok {
+            label: "Passing"
+            tone: "success"
+        }
+
+        Badge broken {
+            label: "Failing"
+            tone: "danger"
+        }
+
+        Badge unknown {
+            label: "Pending"
+            tone: "neutral"
+        }
+    }
+}

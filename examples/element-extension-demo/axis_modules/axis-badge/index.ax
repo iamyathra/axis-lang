@@ -1,0 +1,8 @@
+// A package only activates once some `.ax` source actually imports it (see
+// axis-visibility/index.ax's identical note) - the real capability here
+// lives entirely in build.js/extension.js, not in any exported AXIS value,
+// so this export exists only to give `import activateBadge from "axis-badge"`
+// something to import.
+export fn activateBadge() {
+    return true
+}

@@ -1,0 +1,217 @@
+// Task 4 - Cinematic Portfolio / Project Experience (benchmarks/task-04-cinematic/requirements.md)
+state progress = 0
+
+state heroColor = "#4a90e2"
+
+state colorIndex = 0
+
+let crew = [{ name: "Ada Solberg", role: "Director" }, { name: "Mateo Reyes", role: "Cinematographer" }, { name: "Priya Nandan", role: "Sound Designer" }]
+
+scene Hero {
+    camera {
+        position: (0, 2, 8)
+    }
+
+    ambientLight fill {
+        intensity: 0.5
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.4)
+        intensity: 1
+    }
+
+    cube visual {
+        color: heroColor
+        scale: (0.9 + progress * 0.6, 0.9 + progress * 0.6, 0.9 + progress * 0.6)
+    }
+
+    animate visual {
+        rotation.y -> 360deg
+        duration: 10s
+        repeat: infinite
+        easing: linear
+    }
+
+    on visual.click {
+        colorIndex = (colorIndex + 1) % 3
+        if (colorIndex == 0) {
+            heroColor = "#4a90e2"
+        } else if (colorIndex == 1) {
+            heroColor = "#e05252"
+        } else {
+            heroColor = "#4caf50"
+        }
+    }
+}
+
+page "Nova Bloom" {
+    container hero {
+        direction: "column"
+        gap: 12
+        padding: 48
+        background: "#0b0b12"
+        scrollProgress: "progress"
+        height: 900
+
+        text eyebrow {
+            content: "A SHORT FILM"
+            color: "#6b8fd6"
+            size: 13
+            weight: "bold"
+        }
+
+        heading title {
+            content: "Nova Bloom"
+            level: 1
+            color: white
+            size: 42
+            weight: "bold"
+        }
+
+        paragraph tagline {
+            content: "A quiet town, a falling star, and the one night everything changed."
+            color: "#a3a3c2"
+            size: 16
+        }
+
+        viewport stage {
+            scene: "Hero"
+            width: 640
+            height: 380
+            radius: 16
+        }
+
+        text hint {
+            content: "Click the shape above. Scroll for more."
+            color: "#6b6b80"
+            size: 12
+        }
+    }
+
+    container progressTrack {
+        background: "#1c1c28"
+        height: 6
+
+        container progressFill {
+            background: "#4a90e2"
+            height: 6
+            width: round(progress * 100) + "%"
+        }
+    }
+
+    container metadata {
+        direction: "row"
+        gap: 48
+        padding: 48
+        background: "#111118"
+
+        container roleBlock {
+            direction: "column"
+            gap: 4
+
+            text roleLabel {
+                content: "ROLE"
+                color: "#6b6b80"
+                size: 12
+            }
+
+            text roleValue {
+                content: "Writer / Director"
+                color: white
+                size: 16
+            }
+        }
+
+        container yearBlock {
+            direction: "column"
+            gap: 4
+
+            text yearLabel {
+                content: "YEAR"
+                color: "#6b6b80"
+                size: 12
+            }
+
+            text yearValue {
+                content: "2026"
+                color: white
+                size: 16
+            }
+        }
+
+        container toolsBlock {
+            direction: "column"
+            gap: 4
+
+            text toolsLabel {
+                content: "TOOLS"
+                color: "#6b6b80"
+                size: 12
+            }
+
+            text toolsValue {
+                content: "AXIS, Blender, Ableton"
+                color: white
+                size: 16
+            }
+        }
+    }
+
+    container crewSection {
+        direction: "column"
+        gap: 16
+        padding: 48
+        background: "#0b0b12"
+
+        heading crewTitle {
+            content: "Cast & Crew"
+            level: 2
+            color: white
+            size: 24
+        }
+
+        container crewGrid {
+            direction: "row"
+            gap: 16
+
+            for i in range(0, len(crew)) {
+                let c = crew[i]
+
+                container ("crewCard" + i) {
+                    direction: "column"
+                    gap: 4
+                    padding: 16
+                    background: "#15151f"
+                    radius: 8
+                    width: 180
+
+                    text ("crewName" + i) {
+                        content: c.name
+                        color: white
+                        size: 15
+                        weight: "bold"
+                    }
+
+                    text ("crewRole" + i) {
+                        content: c.role
+                        color: "#9c9cb8"
+                        size: 13
+                    }
+                }
+            }
+        }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 48
+        background: "#0b0b12"
+
+        text end {
+            content: "Nova Bloom - now in post-production."
+            color: "#6b6b80"
+            size: 13
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "broken-build-extension",
+  "version": "0.1.0",
+  "main": "index.ax",
+  "buildExtension": "build.js"
+}

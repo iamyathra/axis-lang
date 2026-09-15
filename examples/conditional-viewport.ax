@@ -1,0 +1,118 @@
+// AXIS's conditional-viewport showcase: two mounted scenes side by side.
+// Viewport A never leaves. Viewport B's own 3D runtime exists only while
+// 'showB' is true - toggling it doesn't just hide a canvas, it actually
+// mounts/unmounts scene3d.js's own runtime (see
+// docs/architecture/conditional-viewport.md). B carries everything a
+// disposed runtime has to stop: a continuously-repeating `animate`, a
+// scroll-linked `timeline`, and a `scrollProgress` state write - so hiding
+// it while scrolled partway through is a real test of the lifecycle, not
+// just a CSS toggle.
+
+fn presence(visible) {
+    if (visible) {
+        return "mounted"
+    }
+    return "unmounted"
+}
+
+state showB = true
+
+scene sceneA {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4a90e2" }
+
+    animate box {
+        rotation.y -> 360deg
+        duration: 6000
+        repeat: infinite
+        easing: linear
+    }
+}
+
+scene sceneB {
+    state progress = 0
+
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#e0a03c" }
+    sphere spinner { position: (2, 0, 0) color: "#ffcc66" }
+
+    // Still spinning, forever, the moment B is remounted - proof a fresh
+    // mount is a genuinely clean runtime, not a revived old one.
+    animate spinner {
+        rotation.y -> 360deg
+        duration: 900
+        repeat: infinite
+        easing: linear
+    }
+
+    timeline spin {
+        animate box { rotation.y -> 360deg duration: 4000 easing: linear }
+    }
+}
+
+page "AXIS - Conditional Viewport" {
+    container hero {
+        direction: "column"
+        gap: 8
+        padding: 24
+        background: "#0b0b12"
+
+        heading title { content: "Conditional viewport rendering" color: white size: 30 }
+        text subtitle {
+            content: "A never leaves. B's own 3D runtime is " + presence(showB) + "."
+            color: "#9c9cb8"
+        }
+
+        button toggle {
+            label: "Toggle viewport B"
+            color: white
+            background: "#4a5cff"
+            padding: 12
+        }
+
+        container row {
+            direction: "row"
+            gap: 16
+
+            viewport A {
+                scene: "sceneA"
+                width: 320
+                height: 240
+                radius: 12
+            }
+            viewport B {
+                scene: "sceneB"
+                width: 320
+                height: 240
+                radius: 12
+                visible: showB
+                scrollTimeline: "spin"
+                scrollProgress: "progress"
+            }
+        }
+    }
+
+    on toggle.click {
+        showB = !showB
+    }
+
+    container spacer {
+        direction: "column"
+        padding: 64
+        background: "#101018"
+
+        paragraph mid { content: "Scroll to drive B's own timeline while it's mounted - hide B first and scrolling touches nothing of it at all." color: "#9c9cb8" }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 900
+        background: "#0b0b12"
+
+        text end { content: "End." color: "#9c9cb8" }
+    }
+}

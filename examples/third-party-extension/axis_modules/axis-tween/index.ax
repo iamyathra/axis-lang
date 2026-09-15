@@ -1,0 +1,89 @@
+// axis-tween: a small, reusable value-interpolation package - Third-Party
+// Extension Proof milestone (see docs/extensions.md and
+// docs/architecture/2026-09-language-platform-audit.md). Built entirely
+// from primitives that already existed before this package was written -
+// self-bound record methods, `on tick`'s `dt`, functions as first-class
+// values, ordinary arithmetic - with zero changes to src/ (this package
+// was authored strictly after the "core freeze" commit in the git
+// history; `git diff -- src/` across every commit that follows it stays
+// empty).
+//
+// Deliberately generic - unlike axis-inventory (the package alongside
+// this one, game/app-shaped) or physics2d (game-shaped, in
+// examples/physics-demo/), axis-tween has nothing to do with games or
+// physics at all. It answers "animate a plain number from A to B over
+// time," the same problem AXIS's own built-in `animate`/`timeline`
+// system solves declaratively - this package solves it imperatively, for
+// code that wants to read/compose an in-progress value directly (an
+// on-screen counter, a procedurally driven value, anything a declarative
+// `animate` block can't express) rather than binding it to a scene/page
+// property.
+
+// Named `linearEase`/`cubicInOutEase`, not `linear`/`easeInOutCubic` -
+// those exact names are already reserved as global constants for the
+// built-in `animate { easing: ... }` property (src/globals.js's
+// EASING_NAMES), so a package-level `fn` of either name would collide.
+// `quadOutEase` has no such collision, but is named to match anyway, for
+// a consistent public surface.
+export fn linearEase(t) {
+    return t
+}
+
+export fn quadOutEase(t) {
+    return 1 - (1 - t) * (1 - t)
+}
+
+export fn cubicInOutEase(t) {
+    if (t < 0.5) {
+        return 4 * t * t * t
+    }
+    let overshoot = (0 - 2) * t + 2
+    return 1 - (overshoot * overshoot * overshoot) / 2
+}
+
+// Returns a self-bound record: `update(dt)` advances it by `dt` seconds
+// and returns the current interpolated value; `value`/`done` can also be
+// read directly without calling `update`. `easing` is any one-argument
+// function mapping progress (0..1) to eased progress (0..1) - one of the
+// three above, or a caller-supplied one; storing it as a plain field
+// (not baked into a fixed set of named modes) is what lets a consumer
+// hand this package a function it never anticipated.
+export fn createTween(from, to, duration, easing) {
+    let tween = {
+        from: from
+        to: to
+        duration: duration
+        elapsed: 0
+        value: from
+        done: false
+        easing: easing
+    }
+
+    tween.update = fn(dt) {
+        if (self.done) {
+            return self.value
+        }
+        if (self.duration <= 0) {
+            self.elapsed = self.duration
+            self.value = self.to
+            self.done = true
+            return self.value
+        }
+        self.elapsed = self.elapsed + dt
+        let t = self.elapsed / self.duration
+        if (t >= 1) {
+            t = 1
+            self.done = true
+        }
+        self.value = self.from + (self.to - self.from) * self.easing(t)
+        return self.value
+    }
+
+    tween.reset = fn() {
+        self.elapsed = 0
+        self.value = self.from
+        self.done = false
+    }
+
+    return tween
+}

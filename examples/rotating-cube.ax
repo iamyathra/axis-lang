@@ -1,0 +1,18 @@
+// the first AXIS program that actually renders and moves in the browser.
+// run it with: node bin/axis.js run examples/rotating-cube.ax
+scene main {
+    camera {
+        position: (0, 2, 6)
+    }
+
+    cube box {
+        position: (0, 0, 0)
+        color: blue
+    }
+
+    animate box {
+        rotation.y -> 360deg
+        duration: 2s
+        repeat: infinite
+    }
+}

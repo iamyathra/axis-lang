@@ -1,0 +1,273 @@
+// A small multi-page studio site - the real routing example, not a
+// routing-only demo: Home / Work (a list) / a dynamic Work detail page /
+// About / Contact (a form) / a 404 catch-all, sharing a Nav/Footer
+// component, composed exactly the same way any AXIS page already composes
+// - `route` just decides which page a URL renders. See
+// docs/architecture/routing.md for the full design; docs/architecture/
+// async-await.md's examples/async-data.ax for `async`/`fetch`/`api`, kept
+// out of this file so routing itself stays the thing under test.
+
+let projects = [
+    { id: "nimbus", name: "Nimbus Studio", blurb: "A cloud-native creative studio site, built entirely in AXIS." },
+    { id: "aurora", name: "Aurora Labs", blurb: "An R&D microsite with live, in-browser experiments." },
+    { id: "meridian", name: "Meridian", blurb: "A product launch page with a cinematic, scroll-driven story." }
+]
+
+fn findProject(id) {
+    for p in projects {
+        if (p.id == id) {
+            return p
+        }
+    }
+    return null
+}
+
+route "/" Home
+route "/work" Work
+route "/work/:id" WorkDetail
+route "/about" About
+route "/contact" Contact
+route "*" NotFound
+
+component Nav() {
+    container bar {
+        direction: "row"
+        justify: "between"
+        align: "center"
+        padding: 20
+        background: "#0b0b12"
+
+        text brand { content: "Nimbus Studio" color: white weight: "bold" }
+
+        container links {
+            direction: "row"
+            gap: 20
+
+            link toHome { href: "/" label: "Home" color: "#d8d8e6" }
+            link toWork { href: "/work" label: "Work" color: "#d8d8e6" }
+            link toAbout { href: "/about" label: "About" color: "#d8d8e6" }
+            link toContact { href: "/contact" label: "Contact" color: "#d8d8e6" }
+
+            responsive: {
+                mobile: { gap: 10 }
+            }
+        }
+    }
+}
+
+component Footer() {
+    container bar {
+        direction: "row"
+        justify: "center"
+        padding: 24
+        background: "#0b0b12"
+
+        text copy { content: "AXIS Studio - built entirely in AXIS" color: "#6c6c86" size: 13 }
+    }
+}
+
+component WorkCard(project) {
+    container card {
+        direction: "column"
+        gap: 8
+        padding: 20
+        radius: 12
+        background: "#15151f"
+
+        heading title { content: project.name level: 3 color: white }
+        paragraph blurb { content: project.blurb color: "#a8a8c0" }
+        link view { href: ("/work/" + project.id) label: "View project" color: "#7dd3fc" }
+    }
+}
+
+page Home {
+    Nav nav {}
+
+    container hero {
+        direction: "column"
+        align: "center"
+        justify: "center"
+        gap: 16
+        padding: 96
+        background: "#08080d"
+        opacity: 0
+
+        heading title { content: "We build for the web that moves" color: white size: 40 }
+        paragraph subtitle {
+            content: "A small studio site - routed, responsive, and composed from reusable AXIS components, no other framework involved."
+            color: "#a8a8c0"
+        }
+        link cta { href: "/work" label: "See our work" color: "#7dd3fc" }
+
+        responsive: {
+            mobile: { padding: 40 }
+        }
+    }
+
+    animate hero {
+        opacity -> 1
+        duration: 700ms
+        easing: easeOut
+    }
+
+    container featured {
+        direction: "row"
+        gap: 20
+        padding: 48
+
+        responsive: {
+            mobile: { direction: "column" }
+        }
+
+        for project in projects {
+            WorkCard (project.id) { project: project }
+        }
+    }
+
+    Footer foot {}
+}
+
+page Work {
+    Nav nav {}
+
+    container body {
+        direction: "column"
+        gap: 20
+        padding: 48
+
+        heading title { content: "Our work" color: white size: 32 }
+
+        container grid {
+            direction: "row"
+            gap: 20
+
+            responsive: {
+                mobile: { direction: "column" }
+            }
+
+            for project in projects {
+                WorkCard (project.id) { project: project }
+            }
+        }
+    }
+
+    Footer foot {}
+}
+
+// `params.id` (see docs/architecture/routing.md) - the one dynamic route in
+// this site. `findProject` (above) is an ordinary top-level `fn`, the same
+// as any other - route params are just a record, nothing about looking one
+// up is routing-specific.
+//
+// Deliberately calls `findProject(params.id)` directly in the condition
+// and each place a field is read, rather than caching it once in a `let` -
+// a plain `let` is computed once, like any other AXIS value, and does NOT
+// re-run when `params` changes; only an `if`'s own condition (and an
+// element's own property expressions) are what interpreter.js tracks as
+// reactive - see docs/architecture/routing.md's "params/query are reactive
+// state, but a `let` derived from them isn't" note. The `if`/`else` itself
+// is wrapped in an (otherwise unstyled) `container` rather than sitting
+// bare at the page's own top level - a reactive `if`/`for`'s own generated
+// content needs a real element already on the page to mount *into* (see
+// docs/architecture/reactive-structure.md); the page itself isn't one.
+page WorkDetail {
+    Nav nav {}
+
+    container detail {
+        if (findProject(params.id) != null) {
+            container body {
+                direction: "column"
+                gap: 12
+                padding: 48
+
+                heading title { content: findProject(params.id).name color: white size: 32 }
+                paragraph blurb { content: findProject(params.id).blurb color: "#a8a8c0" }
+                link back { href: "/work" label: "<- Back to work" color: "#7dd3fc" }
+            }
+        } else {
+            container body {
+                direction: "column"
+                gap: 12
+                padding: 48
+
+                heading title { content: "No project called '" + params.id + "'" color: white size: 28 }
+                link back { href: "/work" label: "<- Back to work" color: "#7dd3fc" }
+            }
+        }
+    }
+
+    Footer foot {}
+}
+
+page About {
+    Nav nav {}
+
+    container body {
+        direction: "column"
+        gap: 12
+        padding: 48
+        align: "center"
+
+        heading title { content: "About" color: white size: 32 }
+        paragraph copy {
+            content: "AXIS Studio is a fictional creative studio, built to prove that a real, production-shaped multi-page site can be written entirely in the AXIS language - routing, components, responsive layout, animation, and all."
+            color: "#a8a8c0"
+        }
+    }
+
+    Footer foot {}
+}
+
+page Contact {
+    Nav nav {}
+
+    state sent = false
+    state name = ""
+
+    container body {
+        direction: "column"
+        gap: 16
+        padding: 48
+        align: "center"
+
+        heading title { content: "Contact" color: white size: 32 }
+
+        if (sent) {
+            paragraph thanks { content: "Thanks, " + name + " - we'll be in touch." color: "#7dd3fc" }
+        } else {
+            form contactForm {
+                direction: "column"
+                gap: 12
+
+                input nameField { placeholder: "Your name" }
+                button submit { label: "Send" }
+            }
+        }
+    }
+
+    on nameField.change {
+        name = nameField.value
+    }
+
+    on contactForm.submit {
+        sent = true
+    }
+
+    Footer foot {}
+}
+
+page NotFound {
+    Nav nav {}
+
+    container body {
+        direction: "column"
+        align: "center"
+        justify: "center"
+        gap: 12
+        padding: 96
+
+        heading title { content: "404" color: white size: 48 }
+        paragraph copy { content: "That page doesn't exist." color: "#a8a8c0" }
+        link home { href: "/" label: "Back home" color: "#7dd3fc" }
+    }
+}

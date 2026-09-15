@@ -1,0 +1,90 @@
+// A first-person controller, rebuilt on the game-foundation phase's
+// general mechanisms (post-milestone directive, item 7: "rebuild the
+// existing FPS camera controller using the general mechanisms
+// established above... must NOT become an FPS-only runtime primitive").
+// Everything that used to be inline math in this file is now two
+// reusable packages - axis_modules/input/ (makeInputState - raw browser
+// events -> normalized input state) and axis_modules/camera/
+// (makeFpsCamera - yaw/pitch look + relative movement) - composed here,
+// plus pointer lock (a real scene3d.js addition, `pointerLock`, this
+// phase's one genuine runtime-level primitive, since the browser's own
+// Pointer Lock API has no AXIS equivalent to build from). Everything
+// else is still ordinary AXIS code; nothing here is hardcoded into the
+// runtime as "the FPS controller."
+//
+// Run with: node bin/axis.js run examples/fps-controls/main.ax
+// (click into the scene first, both to focus it for keyboard events AND
+// to request the pointer lock the mouse-look below depends on)
+import makeInputState from "input"
+
+import makeFpsCamera from "camera"
+
+scene main {
+    camera {
+        position: (0, 2, 8)
+    }
+
+    ambientLight fill {
+        intensity: 0.7
+    }
+
+    cube box {
+        position: (0, 0, -5)
+        color: "#4f46e5"
+    }
+
+    cube marker {
+        position: (4, 0, -5)
+        color: "#22c55e"
+    }
+
+    let input = makeInputState()
+
+    let fps = makeFpsCamera({ sensitivity: 0.2, speed: 4 })
+
+    on box.click {
+        pointerLock.request()
+    }
+
+    on keydown {
+        input.handleKeyDown(key)
+    }
+
+    on keyup {
+        input.handleKeyUp(key)
+    }
+
+    on mousemove {
+        input.handleMouseMove(dx, dy)
+    }
+
+    on tick {
+        // Mouse-look only actually turns the camera while the pointer is
+        // locked - otherwise the OS cursor would hit the screen edge and
+        // clamp movement well before a real look-around gesture finishes
+        // (see scene3d.js's PointerLockHandle for why this is polled here
+        // instead of a separate `on` event: dx/dy mean the same thing
+        // either way, only whether the cursor is free to keep moving
+        // changes).
+        if (pointerLock.isLocked) {
+            fps.look(input.mouseDX, input.mouseDY)
+        }
+        let forwardInput = 0
+        let strafeInput = 0
+        if (input.isKeyDown("w") || input.isKeyDown("ArrowUp")) {
+            forwardInput = forwardInput + 1
+        }
+        if (input.isKeyDown("s") || input.isKeyDown("ArrowDown")) {
+            forwardInput = forwardInput - 1
+        }
+        if (input.isKeyDown("d") || input.isKeyDown("ArrowRight")) {
+            strafeInput = strafeInput + 1
+        }
+        if (input.isKeyDown("a") || input.isKeyDown("ArrowLeft")) {
+            strafeInput = strafeInput - 1
+        }
+        camera.position = fps.move(camera.position, forwardInput, strafeInput, dt)
+        camera.target = fps.lookTarget(camera.position)
+        input.endFrame()
+    }
+}

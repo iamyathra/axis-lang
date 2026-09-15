@@ -1,0 +1,106 @@
+// Task 1 - Interactive 3D Hero (benchmarks/task-01-hero/requirements.md)
+state clicks = 0
+
+scene Hero {
+    camera {
+        position: (0, 1.5, 6)
+    }
+
+    ambientLight fill {
+        intensity: 0.6
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.5)
+        intensity: 0.8
+    }
+
+    sphere gem {
+        position: (0, 0, 0)
+        color: "#4a90e2"
+    }
+
+    animate gem {
+        rotation.y -> 360deg
+        duration: 12s
+        repeat: infinite
+        easing: linear
+    }
+
+    state offsetX = 0
+
+    state offsetY = 0
+
+    on mousemove {
+        offsetX = max(-1, min(1, offsetX + dx * 0.0006))
+        offsetY = max(-1, min(1, offsetY + dy * 0.0006))
+    }
+
+    on tick {
+        camera.position = (offsetX * 2.5, 1.5 + offsetY * -1.2, 6)
+        camera.target = (0, 0, 0)
+    }
+
+    on gem.hover {
+        gem.color = "#facc15"
+    }
+
+    on gem.unhover {
+        gem.color = "#4a90e2"
+    }
+
+    on gem.click {
+        clicks = clicks + 1
+    }
+}
+
+page "Orbit Studio" {
+    state ctaLabel = "Get started"
+
+    container page {
+        background: "#0b0b12"
+        direction: "column"
+        align: "center"
+        justify: "center"
+        gap: 20
+        padding: 64
+
+        heading title {
+            content: "Orbit Studio"
+            level: 1
+            color: white
+            size: 44
+            weight: "bold"
+            align: "center"
+        }
+
+        paragraph subtitle {
+            content: "A hero section where the 3D object actually reacts to you."
+            color: "#a3a3c2"
+            size: 18
+            align: "center"
+        }
+
+        viewport hero3d {
+            scene: "Hero"
+            width: 640
+            height: 420
+            radius: 16
+        }
+
+        text counter {
+            content: "Interactions: " + clicks
+            color: "#e5e5f5"
+            size: 16
+        }
+
+        button cta {
+            label: ctaLabel
+            color: "#4a90e2"
+        }
+    }
+
+    on cta.click {
+        ctaLabel = "Thanks!"
+    }
+}

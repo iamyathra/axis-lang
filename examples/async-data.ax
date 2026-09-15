@@ -1,0 +1,54 @@
+// A small data-driven page: loads a list from an API on a button click,
+// shows a loading state while it's in flight, and a clear error if the
+// request fails - the common "fetch, render, handle failure" shape every
+// real web app needs. See docs/language.md's Async/Errors sections.
+
+async fn loadProjects() {
+    let response = await api.get("/api/projects")
+    return response
+}
+
+page ProjectBrowser {
+    state loading = false
+    state error = null
+    state projects = []
+
+    heading title {
+        content: "Projects"
+    }
+
+    button reload {
+        label: "Load projects"
+    }
+
+    container status {
+        if (loading) {
+            text loadingText { content: "Loading..." }
+        } else if (error != null) {
+            text errorText { content: error }
+        }
+    }
+
+    on reload.click {
+        loading = true
+        error = null
+        try {
+            let data = await loadProjects()
+            projects = data
+        } catch (err) {
+            error = err
+        }
+        loading = false
+    }
+
+    container list {
+        direction: "column"
+        gap: 8
+
+        for project in projects {
+            text (project.name) {
+                content: project.name
+            }
+        }
+    }
+}

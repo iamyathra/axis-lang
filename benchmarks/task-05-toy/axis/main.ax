@@ -1,0 +1,111 @@
+// Task 5 - Zero-Gravity Playground (benchmarks/task-05-toy/requirements.md)
+const BOUND = 2.5
+
+const DAMPING = 0.997
+
+state bounces = 0
+
+state ballColor = "#4a90e2"
+
+state colorIndex = 0
+
+state vx = 0
+
+state vy = 0
+
+scene Playground {
+    camera {
+        position: (0, 5, 9)
+    }
+
+    ambientLight fill {
+        intensity: 0.6
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.4)
+        intensity: 0.9
+    }
+
+    sphere ball {
+        position: (0, 0, 0)
+        scale: (0.4, 0.4, 0.4)
+        color: ballColor
+    }
+
+    on ball.click {
+        colorIndex = (colorIndex + 1) % 3
+        if (colorIndex == 0) {
+            ballColor = "#4a90e2"
+        } else if (colorIndex == 1) {
+            ballColor = "#e05252"
+        } else {
+            ballColor = "#4caf50"
+        }
+    }
+
+    on keydown {
+        if (key == "ArrowLeft") {
+            vx = vx - 1.5
+        }
+        if (key == "ArrowRight") {
+            vx = vx + 1.5
+        }
+        if (key == "ArrowUp") {
+            vy = vy + 1.5
+        }
+        if (key == "ArrowDown") {
+            vy = vy - 1.5
+        }
+    }
+
+    on tick {
+        if (ball.position.x > BOUND || ball.position.x < 0 - BOUND) {
+            vx = 0 - vx
+            bounces = bounces + 1
+        }
+        if (ball.position.y > BOUND || ball.position.y < 0 - BOUND) {
+            vy = 0 - vy
+            bounces = bounces + 1
+        }
+        vx = vx * DAMPING
+        vy = vy * DAMPING
+        ball.position = (ball.position.x + vx * dt, ball.position.y + vy * dt, ball.position.z)
+    }
+}
+
+page "Zero-Gravity Playground" {
+    container layout {
+        direction: "column"
+        gap: 12
+        padding: 32
+        background: "#0b0b12"
+        align: "center"
+
+        heading title {
+            content: "Zero-Gravity Playground"
+            level: 1
+            color: white
+            size: 28
+        }
+
+        paragraph instructions {
+            content: "Arrow keys to nudge. Click the ball to change its color."
+            color: "#a3a3c2"
+            size: 14
+        }
+
+        viewport stage {
+            scene: "Playground"
+            width: 560
+            height: 420
+            radius: 16
+        }
+
+        text bounceCounter {
+            content: "Bounces: " + bounces
+            color: "#9c9cb8"
+            size: 16
+        }
+    }
+}

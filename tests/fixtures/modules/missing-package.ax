@@ -1,0 +1,3 @@
+import Whatever from "nonexistent-package"
+
+page Home { }

@@ -1,0 +1,124 @@
+// Game-development foundation phase (see
+// docs/architecture/2026-09-language-platform-audit.md's game-foundation
+// addendum): a minimal entity/component/system demo proving the pattern
+// in axis_modules/ecs/ actually composes - movement, damage, and cleanup,
+// none of it hardcoded into AXIS itself. Deliberately not 3D (the camera
+// controller phase covers that separately, in examples/fps-controls/) -
+// keeping this decoupled from rendering is itself part of the proof that
+// entities/components/systems aren't a 3D-only idea.
+//
+// Run with: node bin/axis.js run examples/game-foundation/main.ax
+import makeEntity from "ecs"
+
+import makeWorld from "ecs"
+
+import runSystems from "ecs"
+
+// ---- components ------------------------------------------------------
+// Each one is just a record with a `type` tag (what makeEntity.get/has
+// key off) plus whatever data/behavior it needs - no base class, no
+// registration. See docs/language.md's "Entities, components, systems".
+fn makeTransform(x, y) {
+    return { type: "Transform", x: x, y: y }
+}
+
+fn makeVelocity(vx, vy) {
+    return { type: "Velocity", vx: vx, vy: vy }
+}
+
+fn makeHealth(value) {
+    let h = { type: "Health", value: value }
+    h.damage = fn(amount) { self.value = self.value - amount }
+    h.isDead = fn() { return self.value <= 0 }
+    return h
+}
+
+// ---- systems -----------------------------------------------------------
+// Plain functions - `fn(world, dt)` - run in the array order passed to
+// runSystems, every tick. movementSystem must run before healthSystem
+// below so a particle that dies this frame has still moved this frame,
+// not been frozen one tick early - a real, deliberate ordering choice,
+// not an accident of declaration order (see docs/language.md).
+fn movementSystem(world, dt) {
+    for e in world.withComponent("Transform") {
+        let t = e.get("Transform")
+        let v = e.get("Velocity")
+        if (v != null) {
+            t.x = t.x + v.vx * dt
+            t.y = t.y + v.vy * dt
+        }
+    }
+}
+
+fn healthSystem(world, dt) {
+    for e in world.withComponent("Health") {
+        if (e.get("Health").isDead()) {
+            world.destroy(e.id)
+        }
+    }
+}
+
+let world = makeWorld()
+
+let particle = world.spawn(makeEntity("particle").add(makeTransform(0, 0)).add(makeVelocity(10, 5)).add(makeHealth(100)))
+
+state particleX = 0
+
+state particleY = 0
+
+state aliveCount = 1
+
+state log = "Ready."
+
+page "Game Foundation" {
+    container app {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b0f"
+
+        heading title {
+            content: "Entities alive: " + str(aliveCount)
+            color: white
+        }
+
+        text position {
+            content: "particle at (" + str(particleX) + ", " + str(particleY) + ")"
+            color: "#9ca3af"
+        }
+
+        text status {
+            content: log
+            color: "#9ca3af"
+        }
+
+        button hit {
+            label: "Deal 50 damage"
+            color: white
+            background: "#802020"
+            padding: 12
+            radius: 8
+        }
+    }
+
+    on hit.click {
+        let h = particle.get("Health")
+        if (h != null) {
+            h.damage(50)
+            log = "Dealt 50 damage."
+        }
+    }
+
+    on tick {
+        runSystems([movementSystem, healthSystem], world, dt)
+        aliveCount = len(world.entities)
+        if (aliveCount > 0) {
+            let t = world.entities[0].get("Transform")
+            particleX = t.x
+            particleY = t.y
+            log = "Alive."
+        } else {
+            log = "Particle destroyed."
+        }
+    }
+}

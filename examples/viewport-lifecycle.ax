@@ -1,0 +1,85 @@
+// AXIS's viewport-lifecycle showcase: three mounted viewports (A/B/C) side
+// by side, where B alone is animated, clickable, and tied to page scroll -
+// everything a disposed runtime must stop doing. Unmounting B (via the
+// internal unmountViewport primitive - nothing in the AXIS language can
+// trigger this yet, see docs/architecture/viewport-lifecycle.md) must leave
+// A and C completely unaffected.
+
+state bClicks = 0
+
+scene sceneA {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4a90e2" }
+}
+
+scene sceneB {
+    state progress = 0
+
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#e0a03c" }
+    sphere spinner { position: (2, 0, 0) color: "#ffcc66" }
+
+    // Auto-plays on load, forever - the "no stale animation continues"
+    // check: this one keeps this viewport's own tick() returning
+    // needsMore: true indefinitely unless disposal actually stops it.
+    animate spinner {
+        rotation.y -> 360deg
+        duration: 1000
+        repeat: infinite
+        easing: linear
+    }
+
+    timeline spin {
+        animate box { rotation.y -> 360deg duration: 4000 easing: linear }
+    }
+
+    on box.click {
+        bClicks += 1
+    }
+}
+
+scene sceneC {
+    camera { position: (0, 2, 6) }
+    ambientLight fill { intensity: 0.6 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+    cube box { color: "#4caf50" }
+}
+
+page "AXIS - Viewport Lifecycle" {
+    container hero {
+        direction: "column"
+        gap: 8
+        padding: 24
+        background: "#0b0b12"
+
+        heading title { content: "Viewport lifecycle" color: white size: 30 }
+        text clicks { content: "B clicks: " + bClicks color: "#8fd3ff" size: 16 }
+
+        container row {
+            direction: "row"
+            gap: 16
+
+            viewport A { scene: "sceneA" width: 300 height: 220 radius: 12 }
+            viewport B {
+                scene: "sceneB"
+                width: 300
+                height: 220
+                radius: 12
+                scrollTimeline: "spin"
+                scrollProgress: "progress"
+            }
+            viewport C { scene: "sceneC" width: 300 height: 220 radius: 12 }
+        }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 800
+
+        text end { content: "End." color: "#9c9cb8" }
+    }
+}

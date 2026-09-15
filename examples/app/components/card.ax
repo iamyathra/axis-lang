@@ -1,0 +1,33 @@
+// A reusable project card - each instance gets its own "likes" counter,
+// namespaced under the instance name so multiple cards on the same page
+// don't collide (see docs/language.md's Components section for how).
+
+import shout from "../utils.ax"
+
+export component Card(title, description) {
+    // `state` (and the `on` handler that mutates it) has to sit at the
+    // component's own top level, not nested inside `root` - same "only
+    // top-level bindings are visible to handlers" rule scenes/pages
+    // already had before components existed. Nesting doesn't stop
+    // `on`/`animate` from finding a target though, so `root`'s children
+    // are still reachable from here by name.
+    state likes = 0
+
+    container root {
+        direction: "column"
+        gap: 8
+        padding: 20
+        background: "#141420"
+        radius: 12
+        border: "1px solid #23232f"
+
+        heading cardTitle { content: shout(title) level: 3 color: white }
+        paragraph cardDesc { content: description color: "#9a9aa5" size: 14 }
+        text likeCount { content: likes + " like(s)" color: "#7dd3fc" size: 12 }
+        button likeBtn { label: "Like" color: white background: "#4f46e5" padding: 8 radius: 6 }
+    }
+
+    on likeBtn.click {
+        likes += 1
+    }
+}

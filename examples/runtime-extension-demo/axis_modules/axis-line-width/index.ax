@@ -1,0 +1,6 @@
+// See axis-wireframe/index.ax's own comment for why this export exists at
+// all (a package only activates once some `.ax` source actually imports
+// it) even though the real capability lives entirely in extension.js.
+export fn resetLineWidth(obj) {
+    obj.wireframeLinewidth = 1
+}

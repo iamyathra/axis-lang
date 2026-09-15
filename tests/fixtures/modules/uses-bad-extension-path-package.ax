@@ -1,0 +1,5 @@
+import shout from "bad-extension-path"
+
+page Home {
+    text label { content: shout("hi") }
+}

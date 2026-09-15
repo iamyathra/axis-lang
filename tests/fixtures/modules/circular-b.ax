@@ -1,0 +1,5 @@
+import a from "./circular-a.ax"
+
+export fn b(x) {
+    return a(x)
+}

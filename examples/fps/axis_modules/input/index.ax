@@ -1,0 +1,86 @@
+// A unified input-state abstraction (game-foundation phase, item 4 of the
+// post-milestone directive): separates raw browser input -> AXIS input
+// state -> application/game logic. AXIS's own `on keydown`/`on keyup`/
+// `on mousemove`/`on mousedown`/`on mouseup` are deliberately raw, one
+// event at a time (see docs/language.md's Keyboard/Mouse input
+// sections) - this package is exactly the kind of convenience the
+// platform audit predicted a package could build on top of them, built
+// with zero changes to src/ (same proof examples/physics-demo/'s
+// axis_modules/physics2d/ already made for Phase G).
+//
+// Deliberately does NOT add an absolute mouse position - AXIS has no
+// "where is the mouse right now" primitive by design (see docs/
+// language.md: "anything that wants an absolute position can track its
+// own by accumulating deltas"), and this package doesn't second-guess
+// that; `mouseDX`/`mouseDY` are this frame's accumulated movement, the
+// same delta-only shape `on mousemove` itself already has, just summed
+// across however many mousemove events fired since the last `endFrame()`.
+
+export fn makeInputState() {
+    let s = { held: [], justPressed: [], justReleased: [], mouseDX: 0, mouseDY: 0, mouseButtons: [] }
+
+    s.handleKeyDown = fn(key) {
+        if (!includes(self.held, key)) {
+            push(self.held, key)
+            push(self.justPressed, key)
+        }
+    }
+
+    s.handleKeyUp = fn(key) {
+        self.held = filter(self.held, fn(k) { return k != key })
+        push(self.justReleased, key)
+    }
+
+    s.isKeyDown = fn(key) {
+        return includes(self.held, key)
+    }
+
+    // Edge-triggered - true only during the tick(s) since the key most
+    // recently went down, cleared by endFrame(). Distinguishes "the key
+    // was just pressed" (a jump, a menu toggle) from "the key is being
+    // held" (isKeyDown, above) - both are real, different questions a
+    // game asks.
+    s.wasKeyPressed = fn(key) {
+        return includes(self.justPressed, key)
+    }
+
+    s.wasKeyReleased = fn(key) {
+        return includes(self.justReleased, key)
+    }
+
+    s.handleMouseMove = fn(dx, dy) {
+        self.mouseDX = self.mouseDX + dx
+        self.mouseDY = self.mouseDY + dy
+    }
+
+    s.handleMouseDown = fn(button) {
+        if (!includes(self.mouseButtons, button)) {
+            push(self.mouseButtons, button)
+        }
+    }
+
+    s.handleMouseUp = fn(button) {
+        self.mouseButtons = filter(self.mouseButtons, fn(b) { return b != button })
+    }
+
+    s.isMouseDown = fn(button) {
+        return includes(self.mouseButtons, button)
+    }
+
+    // Call once per tick, AFTER reading this frame's justPressed/
+    // justReleased/mouseDX/mouseDY - clears the edge-triggered/delta
+    // state so the next tick starts fresh. Without this, wasKeyPressed
+    // would stay true forever after one press (never actually edge-
+    // triggered), and mouseDX/mouseDY would keep accumulating across
+    // every tick instead of reporting "how far the mouse moved this
+    // frame" - the exact "state resetting"/"accumulating" bug class
+    // this project's own testing philosophy exists to catch.
+    s.endFrame = fn() {
+        self.justPressed = []
+        self.justReleased = []
+        self.mouseDX = 0
+        self.mouseDY = 0
+    }
+
+    return s
+}

@@ -1,0 +1,55 @@
+// A minimal 2D physics package - Phase G of the general-purpose-language
+// pivot (see docs/architecture/2026-09-language-platform-audit.md): the
+// actual test of whether a developer can build something AXIS's own
+// creators never anticipated, without touching AXIS's source. Everything
+// here is built entirely from primitives that already existed before this
+// package was written - `on tick`'s `dt` (Phase C), self-bound record
+// methods (Phase E), and ordinary math. Nothing in src/ changed to make
+// this possible.
+//
+// Deliberately small: gravity, velocity integration, and bouncing off a
+// floor/walls - not a general rigid-body engine. Positions/velocities are
+// in whatever unit the caller wants (the accompanying example uses page
+// pixels), since this package has no opinion on what a "world" is.
+
+export let GRAVITY = 900
+
+// A body carries its own position/velocity and knows how to advance
+// itself - `step`/`bounceFloor`/`bounceWalls` all read and mutate `self`
+// (the body they were called on), so a scene can hold as many independent
+// bodies as it wants, each one calling these same three methods on itself
+// every frame.
+export fn makeBody(x, y, vx, vy) {
+    let body = { x: x, y: y, vx: vx, vy: vy }
+
+    body.step = fn(dt, gravity) {
+        self.vy = self.vy + gravity * dt
+        self.x = self.x + self.vx * dt
+        self.y = self.y + self.vy * dt
+    }
+
+    // `restitution` - how much speed survives a bounce (1 = perfectly
+    // bouncy, 0 = stops dead). Clamps the body back onto the floor/wall
+    // instead of letting it sink in - the tunneling-through-a-thin-floor
+    // problem every simple (non-continuous-collision) physics step has,
+    // acceptable at this scale and frame rate.
+    body.bounceFloor = fn(floorY, restitution) {
+        if (self.y > floorY) {
+            self.y = floorY
+            self.vy = 0 - self.vy * restitution
+        }
+    }
+
+    body.bounceWalls = fn(minX, maxX, restitution) {
+        if (self.x < minX) {
+            self.x = minX
+            self.vx = 0 - self.vx * restitution
+        }
+        if (self.x > maxX) {
+            self.x = maxX
+            self.vx = 0 - self.vx * restitution
+        }
+    }
+
+    return body
+}

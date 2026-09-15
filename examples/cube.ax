@@ -1,0 +1,16 @@
+// a scene with a camera and a couple of shapes.
+scene main {
+    camera {
+        position: (0, 2, 6)
+    }
+
+    cube box {
+        position: (0, 0, 0)
+        color: red
+    }
+
+    sphere ball {
+        position: (2, 1, 0)
+        color: blue
+    }
+}

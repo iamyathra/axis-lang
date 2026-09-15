@@ -1,0 +1,5 @@
+// Shared helpers, importable by any page or component in this project.
+
+export fn shout(text) {
+    return text + "!"
+}

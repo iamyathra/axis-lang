@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>D - AXIS emits an event to the host</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f8; color: #111; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; }
+  #log { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; min-height: 60px; font-family: monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>AXIS calls out to the host</h1>
+  <p>Click the button inside the embedded component - it calls <code>emit("notify", title)</code>; the host listens with <code>instance.on("notify", ...)</code>.</p>
+  <div id="hero"></div>
+  <div id="log">(no events yet)</div>
+</main>
+
+<script type="module">
+  import { mount } from "/src/mount.js";
+
+  const source = await (await fetch("./hero.ax")).text();
+  const instance = await mount(document.getElementById("hero"), source, { inputs: { title: "Click my button", intensity: 0.6 } });
+
+  const log = document.getElementById("log");
+  const entries = [];
+  instance.on("notify", (payload) => {
+    entries.push(`notify: ${JSON.stringify(payload)} @ ${new Date().toLocaleTimeString()}`);
+    log.textContent = entries.join("\n");
+  });
+
+  window.__axisInstance = instance;
+</script>
+</body>
+</html>

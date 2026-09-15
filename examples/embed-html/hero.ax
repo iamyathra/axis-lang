@@ -1,0 +1,59 @@
+// A real, embeddable AXIS component - used by every example in this
+// directory (A-D). Not a toy: a perpetually-animating glow, two
+// host-controllable inputs (ordinary top-level `state` - see
+// docs/architecture/embedding.md), and a click handler that emits an event
+// back to whatever host mounted it, via `emit(name, payload)`.
+//
+// mount() requires exactly one `page` per source file - this is the whole
+// embeddable unit.
+
+state title = "Hello from AXIS"
+state intensity = 0.5
+
+page Hero {
+    container root {
+        width: "100%"
+        padding: "32px"
+        direction: "column"
+        gap: "12px"
+        background: "#14141f"
+        radius: "16px"
+        border: "1px solid #2a2a3d"
+
+        heading h { content: title level: 2 color: "#ffffff" }
+        text sub { content: ("intensity: " + intensity) color: "#9a9ab0" }
+
+        container glowRow {
+            direction: "row"
+            gap: "12px"
+
+            container glow {
+                width: "72px"
+                height: "72px"
+                radius: "36px"
+                background: rgb(130, 100, 255)
+                opacity: intensity
+            }
+
+            button cta {
+                label: "Notify host"
+                background: rgb(130, 100, 255)
+                color: "#ffffff"
+                padding: "10px"
+                radius: "8px"
+                cursor: "pointer"
+            }
+        }
+    }
+
+    animate glow {
+        scale -> 1.2
+        duration: 1100
+        repeat: infinite
+        easing: easeInOut
+    }
+
+    on cta.click {
+        emit("notify", title)
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "axis-line-width",
+  "version": "0.1.0",
+  "main": "index.ax",
+  "runtimeExtension": "extension.js"
+}

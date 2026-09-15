@@ -1,0 +1,13 @@
+// axis-wireframe's `.ax`-facing surface. Deliberately thin: the actual
+// capability (a live-settable `wireframe` property) lives entirely in
+// extension.js and needs no AXIS-level helper at all - `box.wireframe =
+// true` inside an `on` handler already works once the extension's own
+// script has registered it. This export exists so a consuming `.ax` file
+// has something to `import` at all: AXIS has no side-channel "just
+// install this extension" mechanism (deliberately - see
+// docs/runtime-extensions.md) - a package only ever activates because
+// some `.ax` source actually imports it, the same rule as every other
+// AXIS package, runtime-extension-carrying or not.
+export fn toggleWireframe(obj) {
+    obj.wireframe = !obj.wireframe
+}

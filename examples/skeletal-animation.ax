@@ -1,0 +1,115 @@
+// AXIS's skeletal/clip-animation example - see docs/architecture/
+// skeletal-animation.md. examples/assets/character.glb is a small,
+// genuinely skinned fixture (two bones, real vertex weights - not just a
+// whole-object transform) with two named clips, "Wave" (loops) and
+// "Salute" (a single sweep), the same "hand-built but spec-compliant"
+// approach examples/assets/pyramid.glb already used for static geometry.
+//
+// Two characters, both starting from `clip:` (auto-plays, looping, the
+// moment each one finishes loading - the exact "declared at the top level
+// plays automatically" convention `animate`/`timeline` already have), then
+// each one gets seized by a *different* control mechanism, proving a clip
+// is just another timeline-controlled property, not a second animation
+// system, and that two models' clips are genuinely independent (separate
+// AnimationMixer/AnimationAction per model, no cross-talk - see the
+// architecture doc):
+//
+// - `wave`: stays on native, looping playback the whole time - clicking it
+//   toggles `play`/`stop`.
+// - `salute`: page scroll (`scrollTimeline`, below) scrubs its clip's
+//   *progress* directly, exactly the same scroll-scrubbing mechanism a
+//   `position`/`material` property already had - scroll up and the salute
+//   reverses, jump with the scrollbar and it jumps straight there, and the
+//   first `progress` write pauses whatever native playback `clip:` started.
+//   Clicking it instead switches back to *native* playback (`play Salute on
+//   salute`) - `progress` and `play` are just two ways of moving the same
+//   AnimationAction, not two incompatible systems.
+
+state showRig = true
+
+scene rig {
+    camera { position: (0, 1.4, 6) controls: "orbit" }
+    ambientLight fill { intensity: 0.5 }
+    directionalLight sun { direction: (-1, -1.2, -0.5) intensity: 1.1 }
+
+    model wave {
+        src: "./assets/character.glb"
+        position: (-1.2, -1, 0)
+        clip: "Wave"
+    }
+
+    model salute {
+        src: "./assets/character.glb"
+        position: (1.2, -1, 0)
+        clip: "Salute"
+    }
+
+    let waving = true
+
+    on wave.click {
+        if (waving) {
+            stop wave
+        } else {
+            play Wave on wave
+        }
+        waving = !waving
+    }
+
+    on salute.click {
+        play Salute on salute
+    }
+}
+
+page "AXIS - Skeletal Animation" {
+    container intro {
+        direction: "column"
+        gap: 8
+        padding: 32
+        background: "#0b0b12"
+
+        heading title { content: "Two bones, two clips, zero new animation systems" color: white size: 32 }
+        text subtitle {
+            content: "Left: click to play/stop a looping clip. Right: scroll to scrub its progress, or click to switch to native looping playback."
+            color: "#9c9cb8"
+        }
+
+        button toggleRig { label: "Toggle the whole viewport" color: white background: "#4a5cff" padding: 12 }
+    }
+
+    on toggleRig.click {
+        showRig = !showRig
+    }
+
+    container stagePin {
+        direction: "column"
+        height: 2400
+        background: "#0b0b12"
+        scrollTimeline: "scrub"
+
+        viewport stage {
+            scene: "rig"
+            position: "sticky"
+            top: 0
+            width: "100%"
+            height: 520
+            radius: 16
+            visible: showRig
+        }
+    }
+
+    container footer {
+        direction: "column"
+        padding: 64
+        background: "#0b0b12"
+
+        text end { content: "End - scroll back up to reverse the salute." color: "#9c9cb8" }
+    }
+
+    // Drives `salute`'s own clip progress directly from scroll, the exact
+    // same cross-scene timeline step ("viewportName.objectName") every
+    // other 3D property already uses - `progress` isn't a special case here
+    // at the language level at all.
+    timeline scrub {
+        animate ("stage.salute") { progress -> 1 duration: 2000 }
+    }
+}

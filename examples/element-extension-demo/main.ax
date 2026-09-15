@@ -1,0 +1,45 @@
+// The extensibility test docs/architecture/2026-09-language-platform-audit.md
+// called for: a genuinely new declarative DOM element type ('badge'),
+// registered entirely from axis_modules/axis-badge/ (build.js + extension.js
+// + axis.json's new 'buildExtension' field) with zero changes to
+// interpreter.js/domHtml.js/pageRuntime.js *beyond* the one fallback lookup
+// each already needed to consult a third-party registry at all - the same
+// shape registerScalarProperty already proved for 3D properties, extended to
+// a new dimension (element *types*, not just properties on existing ones).
+// 'badge' is not a keyword anywhere in AXIS's own source - it's just a name
+// this package happened to choose.
+import activateBadge from "axis-badge"
+
+state clicks = 0
+
+page "Badge Extension Demo" {
+    container app {
+        direction: "column"
+        gap: 12
+        padding: 24
+        background: "#0b0b0f"
+
+        heading title {
+            content: "A real third-party element type"
+            color: white
+        }
+
+        badge status {
+            content: "clicks: " + str(clicks)
+            color: white
+            background: "#2a6df4"
+            padding: 8
+            radius: 6
+        }
+
+        button bump {
+            label: "Click me"
+            color: white
+            background: "#1f2937"
+        }
+    }
+
+    on bump.click {
+        clicks = clicks + 1
+    }
+}

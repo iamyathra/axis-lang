@@ -1,0 +1,5 @@
+import greet from "greeter"
+
+page Home {
+    text label { content: greet("AXIS") }
+}

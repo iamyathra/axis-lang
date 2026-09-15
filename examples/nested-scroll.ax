@@ -1,0 +1,42 @@
+// `scrollRoot` - a scroll-linked timeline/state can now measure against a
+// scrollable *container* instead of always the document (see
+// docs/architecture/nested-scroll.md) - the one piece of the "tall
+// wrapper, pinned inner element" pattern that was still missing.
+
+state progress = 0
+
+page "Nested scroll" {
+    container page {
+        direction: "column"
+        gap: 16
+        padding: 32
+        background: "#0b0b12"
+
+        heading title { content: "Scroll the box below, not the page" color: white size: 24 }
+        text readout { content: "progress: " + round(progress * 100) + "%" color: "#9c9cb8" }
+
+        container panel {
+            css: "overflow-y: auto"
+            height: 320
+            background: "#16161f"
+            radius: 8
+
+            container track {
+                height: 1600
+                scrollTimeline: "reveal"
+                scrollRoot: "panel"
+                scrollProgress: "progress"
+
+                text label {
+                    content: "This text fades in as YOU scroll the inner box"
+                    color: white
+                    opacity: 0
+                }
+            }
+        }
+    }
+
+    timeline reveal {
+        animate label { opacity -> 1 duration: 1000 }
+    }
+}

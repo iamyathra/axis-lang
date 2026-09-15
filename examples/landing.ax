@@ -1,0 +1,132 @@
+// AXIS's first real page+scene fusion example (see
+// docs/architecture/page-scene-fusion.md): a product-landing-page hero with
+// a live, rotating 3D model sitting inside it via `viewport` - no canvas
+// wiring, no separate Three.js setup, one file, one language. The model is
+// examples/assets/pyramid.glb (the same small glTF fixture examples/model.ax
+// uses) - swap it for anything exported out of Blender and it works the
+// same way. Run with `axis run examples/landing.ax`.
+
+fn featureCard(i) {
+    let features = [
+        { title: "One language", body: "Pages and 3D scenes share the same grammar - animate, on, state, all of it." },
+        { title: "Real assets", body: "Drop in a Blender-exported .glb and it just loads, materials and all." },
+        { title: "One dev loop", body: "axis run, edit, save, see it - no bundler config to fight with." }
+    ]
+    return features[i]
+}
+
+scene Showpiece {
+    camera { position: (0, 1.4, 4) }
+
+    ambientLight fill { intensity: 0.55 }
+    directionalLight sun { direction: (-1, -1, -0.4) intensity: 1 }
+
+    model piece {
+        src: "./assets/pyramid.glb"
+        position: (0, -0.2, 0)
+        scale: (1.4, 1.4, 1.4)
+    }
+
+    animate piece {
+        rotation.y -> 360deg
+        duration: 10s
+        repeat: infinite
+        easing: linear
+    }
+}
+
+page "AXIS" {
+    state dark = true
+
+    container page {
+        background: "#0b0b12"
+
+        container hero {
+            direction: "column"
+            align: "center"
+            justify: "center"
+            gap: 20
+            padding: 64
+
+            text eyebrow {
+                content: "AXIS"
+                color: "#6b8fd6"
+                size: 14
+                weight: "bold"
+            }
+
+            heading title {
+                content: "Build the extraordinary web."
+                level: 1
+                color: white
+                size: 44
+                weight: "bold"
+                align: "center"
+            }
+
+            paragraph subtitle {
+                content: "A page, and a live 3D scene, in one file - no separate renderer to wire together."
+                color: "#a3a3c2"
+                size: 18
+                align: "center"
+            }
+
+            viewport hero3d {
+                scene: "Showpiece"
+                width: 640
+                height: 420
+                radius: 16
+            }
+
+            button toggle {
+                label: "Toggle theme"
+                color: "#4a90e2"
+            }
+        }
+
+        container features {
+            direction: "row"
+            justify: "center"
+            gap: 24
+            padding: 48
+
+            for i in range(0, 3) {
+                let f = featureCard(i)
+                container ("card" + i) {
+                    direction: "column"
+                    gap: 8
+                    padding: 24
+                    background: "#15151f"
+                    radius: 12
+                    width: 240
+
+                    heading ("cardTitle" + i) {
+                        content: f.title
+                        level: 3
+                        color: white
+                        size: 18
+                    }
+
+                    paragraph ("cardBody" + i) {
+                        content: f.body
+                        color: "#9c9cb8"
+                        size: 14
+                    }
+                }
+            }
+        }
+    }
+
+    on toggle.click {
+        dark = !dark
+        if (dark) {
+            page.background = "#0b0b12"
+            title.color = white
+            subtitle.color = "#a3a3c2"
+        } else {
+            page.background = "#f4f4f8"
+            title.color = "#141420"
+            subtitle.color = "#3a3a4a"
+        }
+    }
+}

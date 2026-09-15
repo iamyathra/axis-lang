@@ -1,0 +1,5 @@
+import shout from "escaping-main"
+
+page Home {
+    text label { content: shout("hi") }
+}

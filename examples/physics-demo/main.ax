@@ -1,0 +1,66 @@
+// A real "third-party" package (axis_modules/physics2d/, Phase G of the
+// general-purpose-language pivot) doing gravity/bounce physics, driven by
+// 'on tick' (Phase C) - nothing here required a single change to AXIS's
+// own source. Run with:
+//   node bin/axis.js run examples/physics-demo/main.ax
+import GRAVITY from "physics2d"
+
+import makeBody from "physics2d"
+
+page "Bouncing Balls" {
+    state ball1 = makeBody(60, 0, 120, 0)
+
+    state ball2 = makeBody(160, 40, -80, 0)
+
+    state ball3 = makeBody(260, 80, 150, 0)
+
+    container world {
+        position: "relative"
+        width: 400
+        height: 300
+        background: "#0b0b0f"
+        radius: 12
+
+        container b1 {
+            position: "absolute"
+            left: ball1.x
+            top: ball1.y
+            width: 24
+            height: 24
+            radius: 999
+            background: "#f97316"
+        }
+
+        container b2 {
+            position: "absolute"
+            left: ball2.x
+            top: ball2.y
+            width: 24
+            height: 24
+            radius: 999
+            background: "#22c55e"
+        }
+
+        container b3 {
+            position: "absolute"
+            left: ball3.x
+            top: ball3.y
+            width: 24
+            height: 24
+            radius: 999
+            background: "#3b82f6"
+        }
+    }
+
+    on tick {
+        ball1.step(dt, GRAVITY)
+        ball1.bounceFloor(276, 0.75)
+        ball1.bounceWalls(0, 376, 0.9)
+        ball2.step(dt, GRAVITY)
+        ball2.bounceFloor(276, 0.75)
+        ball2.bounceWalls(0, 376, 0.9)
+        ball3.step(dt, GRAVITY)
+        ball3.bounceFloor(276, 0.75)
+        ball3.bounceWalls(0, 376, 0.9)
+    }
+}

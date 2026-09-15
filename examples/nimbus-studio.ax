@@ -1,0 +1,582 @@
+// The flagship site - "the banger website test." Built entirely in AXIS,
+// using only what shipped this milestone (reactive structure, responsive
+// layout, nested scroll, timeline playback controls) plus everything that
+// already existed (sticky scrollytelling, skeletal animation, components,
+// reactive state) - no hidden JavaScript. See docs/architecture/
+// flagship-site.md for what this build actually needed and what it found
+// awkward.
+component NavLink(label, href) {
+    link self {
+        label: label
+        href: href
+        color: "#e8e8f0"
+    }
+}
+
+component FeatureCard(title, body) {
+    container card {
+        direction: "column"
+        gap: 10
+        padding: 24
+        background: "#14141f"
+        radius: 12
+        responsive: { mobile: { padding: 18 } }
+
+        heading cardTitle {
+            content: title
+            level: 3
+            color: white
+            size: 19
+        }
+
+        paragraph cardBody {
+            content: body
+            color: "#9c9cb8"
+            size: 15
+        }
+    }
+}
+
+state nextProjectId = 5
+
+state activeFilter = "all"
+
+state projects = [{ id: 1, name: "Aurora", category: "design", blurb: "A weather app people actually enjoy checking." }, { id: 2, name: "Kepler", category: "engineering", blurb: "Real-time orbital visualization for mission control." }, { id: 3, name: "Tideline", category: "design", blurb: "Editorial branding for an independent coastal press." }, { id: 4, name: "Ferro", category: "engineering", blurb: "A build pipeline that ships in under nine seconds." }]
+
+fn visibleProjects(all, filter) {
+    if (filter == "all") {
+        return all
+    }
+    let out = []
+    for p in all {
+        if (p.category == filter) {
+            out = out + [p]
+        }
+    }
+    return out
+}
+
+// AXIS has no ternary expression - the smallest working substitute for
+// "this style depends on a condition" is an ordinary function, which is
+// just as reactive as any other property expression (see
+// docs/architecture/flagship-site.md's friction log).
+fn filterButtonColor(current, thisFilter) {
+    if (current == thisFilter) {
+        return "#4a90e2"
+    }
+    return "#1c1c28"
+}
+
+state faqOpen = ""
+
+state testimonialScroll = 0
+
+let faqs = [{ id: "pricing", q: "How do engagements work?", a: "Fixed-scope sprints, billed at the start of each one - no surprise invoices." }, { id: "timeline", q: "How long does a typical project take?", a: "Most ship in four to eight weeks, depending on how much of it is genuinely new." }, { id: "remote", q: "Do you work with remote teams?", a: "Almost exclusively - the studio itself is fully distributed." }]
+
+scene heroScene {
+    camera {
+        position: (0, 1.3, 4.2)
+        fov: 45
+        target: (0, 0.9, 0)
+    }
+
+    environment {
+        background: "#0b0b12"
+    }
+
+    hemisphereLight fill {
+        color: "#dce8ff"
+        groundColor: "#0b0b12"
+        intensity: 0.65
+    }
+
+    directionalLight sun {
+        direction: (-1, -1.2, -0.4)
+        intensity: 1.1
+    }
+
+    model hero {
+        src: "./assets/character.glb"
+        position: (0, -1, 0)
+        clip: "Wave"
+    }
+
+    timeline heroIntro {
+        animate camera {
+            position.z -> 3.2
+            duration: 1400
+            easing: easeOutCubic
+        }
+    }
+
+    // A quiet idle sway once the intro settles - `heroIntro` (a plain,
+    // one-shot camera move) completing is what starts it, and `loop: true`
+    // is what keeps it going indefinitely afterward, rather than a second
+    // hand-rolled "restart on finish" mechanism.
+    timeline heroIdle {
+        loop: true
+
+        animate hero {
+            rotation.y -> 12deg
+            duration: 2600
+            easing: easeInOutCubic
+        }
+    }
+
+    on heroIntro.complete {
+        play heroIdle
+    }
+}
+
+scene pinnedScene {
+    camera {
+        position: (0, 1.2, 5)
+        target: (0, -0.2, 0)
+    }
+
+    // Fog fading to the same color as the page's own dark background - the
+    // pyramid reads as emerging from (and, scrolling back up, receding
+    // into) the surrounding page, not sitting in an obviously separate box.
+    environment {
+        background: "#0b0b12"
+        fogColor: "#0b0b12"
+        fogNear: 3
+        fogFar: 9
+    }
+
+    hemisphereLight fill {
+        color: "#dce8ff"
+        groundColor: "#0b0b12"
+        intensity: 0.6
+    }
+
+    directionalLight sun {
+        direction: (-1, -1, -0.5)
+        intensity: 1
+    }
+
+    model spin {
+        src: "./assets/pyramid.glb"
+        position: (0, -0.2, 0)
+        material.metalness: 0.6
+        material.roughness: 0.25
+    }
+
+    timeline scrollThrough {
+        animate spin {
+            rotation.y -> 720deg
+            duration: 3000
+        }
+
+        animate camera {
+            position.z -> 3
+            duration: 3000
+            at: 0
+        }
+    }
+}
+
+page "Nimbus Studio" {
+    container nav {
+        direction: "row"
+        justify: "between"
+        align: "center"
+        padding: 20
+        position: "sticky"
+        top: 0
+        z: 10
+        background: "#0b0b12"
+        css: "backdrop-filter: blur(6px)"
+
+        heading brand {
+            content: "Nimbus"
+            level: 4
+            color: white
+            size: 20
+        }
+
+        container navLinks {
+            direction: "row"
+            gap: 20
+            responsive: { mobile: { gap: 12 } }
+
+            NavLink workLink {
+                label: "Work"
+                href: "#work"
+            }
+
+            NavLink faqLink {
+                label: "FAQ"
+                href: "#faq"
+            }
+
+            NavLink contactLink {
+                label: "Contact"
+                href: "mailto:hi@nimbus.studio"
+            }
+        }
+    }
+
+    container hero {
+        direction: "row"
+        align: "center"
+        gap: 32
+        padding: 48
+        background: "#0b0b12"
+        responsive: { mobile: { direction: "column", padding: 24, gap: 16 } }
+
+        container heroCopy {
+            direction: "column"
+            gap: 16
+            width: "45%"
+            responsive: { mobile: { width: "100%" } }
+
+            heading heroTitle {
+                content: "We build products that feel inevitable."
+                level: 1
+                color: white
+                size: 40
+                responsive: { mobile: { size: 30 } }
+            }
+
+            paragraph heroSub {
+                content: "Nimbus is a small, distributed studio - design and engineering, one team, one deadline."
+                color: "#9c9cb8"
+                size: 17
+            }
+
+            link ctaBtn {
+                label: "See our work"
+                href: "#work"
+                background: "#4a90e2"
+                color: white
+                padding: 14
+                radius: 8
+                css: "display: inline-block; width: fit-content"
+            }
+        }
+
+        // A real color lerp on hover, not a CSS-transition-shaped hack -
+        // `background`/`color` are `animate` targets on a page element now.
+        on ctaBtn.hover {
+            animate ctaBtn {
+                background -> "#5aa0f2"
+                duration: 180ms
+                easing: easeOutCubic
+            }
+        }
+
+        on ctaBtn.unhover {
+            animate ctaBtn {
+                background -> "#4a90e2"
+                duration: 180ms
+                easing: easeOutCubic
+            }
+        }
+
+        viewport heroViewport {
+            scene: "heroScene"
+            width: "55%"
+            height: 420
+            radius: 16
+            responsive: { mobile: { width: "100%", height: 280 } }
+        }
+    }
+
+    container whatWeDo {
+        direction: "row"
+        gap: 20
+        padding: 48
+        background: "#0e0e17"
+        responsive: { mobile: { direction: "column", padding: 24 } }
+
+        FeatureCard cardDesign {
+            title: "Design"
+            body: "Interfaces built from real content and real constraints, not mood boards."
+        }
+
+        FeatureCard cardEngineering {
+            title: "Engineering"
+            body: "Production systems a small team can actually operate, on-call included."
+        }
+
+        FeatureCard cardStrategy {
+            title: "Strategy"
+            body: "The unglamorous work of deciding what NOT to build this quarter."
+        }
+    }
+
+    container pinWrapper {
+        height: 2400
+        scrollTimeline: "scrollThrough"
+        background: "#0b0b12"
+
+        viewport pinnedViewport {
+            scene: "pinnedScene"
+            position: "sticky"
+            top: 0
+            height: 500
+            width: "100%"
+        }
+    }
+
+    container work {
+        direction: "column"
+        gap: 20
+        padding: 48
+        background: "#0e0e17"
+
+        heading workTitle {
+            content: "Selected work"
+            level: 2
+            color: white
+            size: 28
+        }
+
+        container filters {
+            direction: "row"
+            gap: 8
+
+            button filterAll {
+                label: "All"
+                background: filterButtonColor(activeFilter, "all")
+                color: white
+                padding: 10
+                radius: 6
+            }
+
+            button filterDesign {
+                label: "Design"
+                background: filterButtonColor(activeFilter, "design")
+                color: white
+                padding: 10
+                radius: 6
+            }
+
+            button filterEngineering {
+                label: "Engineering"
+                background: filterButtonColor(activeFilter, "engineering")
+                color: white
+                padding: 10
+                radius: 6
+            }
+        }
+
+        container projectGrid {
+            direction: "row"
+            gap: 16
+            responsive: { mobile: { direction: "column" } }
+
+            for p in visibleProjects(projects, activeFilter) {
+                container ("project" + p.id) {
+                    direction: "column"
+                    gap: 8
+                    padding: 20
+                    background: "#14141f"
+                    radius: 12
+                    width: "31%"
+                    responsive: { mobile: { width: "100%" } }
+
+                    heading ("projectName" + p.id) {
+                        content: p.name
+                        level: 3
+                        color: white
+                        size: 18
+                    }
+
+                    text ("projectCategory" + p.id) {
+                        content: p.category
+                        color: "#4a90e2"
+                        size: 13
+                    }
+
+                    paragraph ("projectBlurb" + p.id) {
+                        content: p.blurb
+                        color: "#9c9cb8"
+                        size: 14
+                    }
+
+                    button ("projectRemove" + p.id) {
+                        label: "Archive"
+                        background: "#1c1c28"
+                        color: "#9c9cb8"
+                        padding: 8
+                        radius: 6
+                    }
+                }
+
+                on ("projectRemove" + p.id).click {
+                    let out = []
+                    for x in projects {
+                        if (x.id != p.id) {
+                            out = out + [x]
+                        }
+                    }
+                    projects = out
+                }
+            }
+        }
+
+        if (len(visibleProjects(projects, activeFilter)) == 0) {
+            text noProjects {
+                content: "Nothing here yet - try a different filter, or add a project below."
+                color: "#666677"
+            }
+        }
+
+        button addProjectBtn {
+            label: "Add a project"
+            background: "#1c1c28"
+            color: white
+            padding: 10
+            radius: 6
+        }
+    }
+
+    container testimonialSection {
+        direction: "column"
+        gap: 16
+        padding: 48
+        background: "#0b0b12"
+
+        heading testimonialTitle {
+            content: "What clients say"
+            level: 2
+            color: white
+            size: 28
+        }
+
+        text testimonialProgress {
+            content: "reading: " + round(testimonialScroll * 100) + "%"
+            color: "#666677"
+            size: 13
+        }
+
+        container testimonialPanel {
+            css: "overflow-y: auto"
+            height: 220
+            background: "#14141f"
+            radius: 12
+            padding: 20
+
+            container testimonialTrack {
+                height: 900
+                scrollRoot: "testimonialPanel"
+                scrollProgress: "testimonialScroll"
+
+                paragraph t1 {
+                    content: "\"Nimbus shipped in six weeks what our last vendor couldn't in six months.\" - Aya, Kepler"
+                    color: "#e8e8f0"
+                    size: 16
+                }
+
+                paragraph t2 {
+                    content: "\"They said no to half of what we asked for, and every single 'no' was right.\" - Devon, Tideline"
+                    color: "#e8e8f0"
+                    size: 16
+                }
+
+                paragraph t3 {
+                    content: "\"The kind of team that reads the actual bug report before replying.\" - Priya, Ferro"
+                    color: "#e8e8f0"
+                    size: 16
+                }
+            }
+        }
+    }
+
+    container faq {
+        direction: "column"
+        gap: 12
+        padding: 48
+        background: "#0e0e17"
+
+        heading faqTitle {
+            content: "Frequently asked"
+            level: 2
+            color: white
+            size: 28
+        }
+
+        for f in faqs {
+            container (f.id + "Row") {
+                direction: "column"
+                gap: 8
+                padding: 16
+                background: "#14141f"
+                radius: 10
+
+                button (f.id + "Toggle") {
+                    label: f.q
+                    background: "#14141f"
+                    color: white
+                    padding: 4
+                    radius: 4
+                }
+
+                if (faqOpen == f.id) {
+                    paragraph (f.id + "Answer") {
+                        content: f.a
+                        color: "#9c9cb8"
+                        size: 15
+                    }
+                }
+            }
+
+            on (f.id + "Toggle").click {
+                if (faqOpen == f.id) {
+                    faqOpen = ""
+                } else {
+                    faqOpen = f.id
+                }
+            }
+        }
+    }
+
+    container footer {
+        direction: "row"
+        justify: "between"
+        align: "center"
+        padding: 32
+        background: "#0b0b12"
+        responsive: { mobile: { direction: "column", gap: 12 } }
+
+        text footerCopy {
+            content: "(c) Nimbus Studio"
+            color: "#666677"
+            size: 13
+        }
+
+        container footerLinks {
+            direction: "row"
+            gap: 16
+
+            NavLink footerWork {
+                label: "Work"
+                href: "#work"
+            }
+
+            NavLink footerContact {
+                label: "Contact"
+                href: "mailto:hi@nimbus.studio"
+            }
+        }
+    }
+
+    on filterAll.click {
+        activeFilter = "all"
+    }
+
+    on filterDesign.click {
+        activeFilter = "design"
+    }
+
+    on filterEngineering.click {
+        activeFilter = "engineering"
+    }
+
+    on addProjectBtn.click {
+        projects = projects + [{ id: nextProjectId, name: "Untitled " + nextProjectId, category: "design", blurb: "A brand-new project, ready to be renamed." }]
+        nextProjectId = nextProjectId + 1
+    }
+}
